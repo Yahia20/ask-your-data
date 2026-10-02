@@ -1,0 +1,1132 @@
+# FROZEN TEST SET - written and committed before the assistant's code existed.
+# Do not tune prompts against these questions; use eval/dev_set.yaml for that.
+#
+# Today is 2026-10-02 (Friday), timezone Asia/Riyadh. The week starts on Sunday.
+# expect: answer  -> the result must match `sql` (Postgres dialect)
+#         clarify -> the assistant must ask a follow-up question
+#         refuse  -> the assistant must decline (out of scope or a write request)
+#
+# cat: msa | saudi | typo | multistep | ambiguous | oos
+
+# ============================================================== MSA
+- id: t001
+  cat: msa
+  q: كم عدد المحادثات التي وصلتنا في الشهر الماضي؟
+  sql: SELECT COUNT(*) FROM interactions i WHERE i.started_at >= '2026-09-01' AND i.started_at < '2026-10-01'
+- id: t002
+  cat: msa
+  q: ما عدد المحادثات عبر واتساب منذ بداية العام؟
+  sql: SELECT COUNT(*) FROM interactions i WHERE i.channel = 'whatsapp' AND i.started_at >= '2026-01-01' AND i.started_at < '2026-10-03'
+- id: t003
+  cat: msa
+  q: ما نسبة المحادثات التي تعامل معها البوت في الشهر الماضي؟
+  sql: SELECT 100.0 * COUNT(*) FILTER (WHERE i.is_bot_handled) / COUNT(*) FROM interactions i WHERE i.started_at >= '2026-09-01' AND i.started_at < '2026-10-01'
+- id: t004
+  cat: msa
+  q: كم محادثة بدأت خارج أوقات الدوام في الربع الثالث؟
+  sql: SELECT COUNT(*) FROM interactions i WHERE i.is_after_hours AND i.started_at >= '2026-07-01' AND i.started_at < '2026-10-01'
+- id: t005
+  cat: msa
+  q: ما متوسط وقت أول رد من الموظفين بالدقائق خلال الشهر الماضي؟
+  sql: SELECT AVG(i.first_response_seconds) / 60.0 FROM interactions i WHERE NOT i.is_bot_handled AND i.started_at >= '2026-09-01' AND i.started_at < '2026-10-01'
+- id: t006
+  cat: msa
+  q: ما متوسط وقت أول رد لكل موظف هذا العام بالدقائق؟
+  sql: |
+    SELECT a.full_name, AVG(i.first_response_seconds) / 60.0
+    FROM interactions i JOIN agents a ON a.agent_id = i.agent_id
+    WHERE NOT i.is_bot_handled AND i.started_at >= '2026-01-01' AND i.started_at < '2026-10-03'
+    GROUP BY a.full_name
+- id: t007
+  cat: msa
+  q: كم عدد المحادثات حسب القناة في الشهر الماضي؟
+  sql: SELECT i.channel, COUNT(*) FROM interactions i WHERE i.started_at >= '2026-09-01' AND i.started_at < '2026-10-01' GROUP BY i.channel
+- id: t008
+  cat: msa
+  q: ما القناة الأكثر استخدامًا من العملاء السعوديين؟
+  sql: |
+    SELECT i.channel FROM interactions i JOIN customers c ON c.customer_id = i.customer_id
+    WHERE c.nationality = 'Saudi' GROUP BY i.channel ORDER BY COUNT(*) DESC LIMIT 1
+- id: t009
+  cat: msa
+  q: كم عميلًا مختلفًا تواصل معنا في شهر سبتمبر؟
+  sql: SELECT COUNT(DISTINCT i.customer_id) FROM interactions i WHERE i.started_at >= '2026-09-01' AND i.started_at < '2026-10-01'
+- id: t010
+  cat: msa
+  q: ما متوسط عدد الرسائل في المحادثة الواحدة؟
+  sql: SELECT AVG(i.message_count) FROM interactions i
+- id: t011
+  cat: msa
+  q: كم محادثة سأل فيها العملاء عن إسطنبول هذا العام؟
+  sql: |
+    SELECT COUNT(DISTINCT i.interaction_id) FROM interactions i
+    JOIN interaction_analysis ia ON ia.interaction_id = i.interaction_id
+    JOIN interaction_destinations x ON x.analysis_id = ia.analysis_id AND x.role = 'destination'
+    JOIN destinations d ON d.destination_id = x.destination_id
+    WHERE d.canonical_name = 'Istanbul' AND i.started_at >= '2026-01-01' AND i.started_at < '2026-10-03'
+- id: t012
+  cat: msa
+  q: ما أكثر خمس وجهات طلبًا في صيف 2026؟
+  sql: |
+    SELECT d.canonical_name FROM interactions i
+    JOIN interaction_analysis ia ON ia.interaction_id = i.interaction_id
+    JOIN interaction_destinations x ON x.analysis_id = ia.analysis_id AND x.role = 'destination'
+    JOIN destinations d ON d.destination_id = x.destination_id
+    WHERE i.started_at >= '2026-06-01' AND i.started_at < '2026-09-01'
+    GROUP BY d.canonical_name ORDER BY COUNT(DISTINCT i.interaction_id) DESC LIMIT 5
+- id: t013
+  cat: msa
+  q: كم محادثة كانت عن العمرة في رمضان؟
+  sql: |
+    SELECT COUNT(*) FROM interactions i JOIN interaction_analysis ia ON ia.interaction_id = i.interaction_id
+    WHERE ia.service = 'umrah' AND i.started_at >= '2026-02-18' AND i.started_at < '2026-03-20'
+- id: t014
+  cat: msa
+  q: ما توزيع المحادثات حسب حرارة العميل في الشهر الماضي؟
+  sql: |
+    SELECT ia.lead_temp, COUNT(*) FROM interactions i JOIN interaction_analysis ia ON ia.interaction_id = i.interaction_id
+    WHERE i.started_at >= '2026-09-01' AND i.started_at < '2026-10-01' GROUP BY ia.lead_temp
+- id: t015
+  cat: msa
+  q: كم عدد العملاء المحتملين الساخنين في أغسطس؟
+  sql: |
+    SELECT COUNT(*) FROM interactions i JOIN interaction_analysis ia ON ia.interaction_id = i.interaction_id
+    WHERE ia.lead_temp = 'hot' AND i.started_at >= '2026-08-01' AND i.started_at < '2026-09-01'
+- id: t016
+  cat: msa
+  q: ما متوسط الميزانية التي يذكرها العملاء للباقات بالريال؟
+  sql: SELECT AVG(ia.budget_amount) FROM interaction_analysis ia WHERE ia.service = 'package' AND ia.budget_currency = 'SAR'
+- id: t017
+  cat: msa
+  q: ما متوسط عدد المسافرين في طلبات الباقات السياحية؟
+  sql: SELECT AVG(ia.travelers_total) FROM interaction_analysis ia WHERE ia.service = 'package'
+- id: t018
+  cat: msa
+  q: ما عدد المحادثات في كل شهر خلال هذا العام؟
+  sql: |
+    SELECT date_trunc('month', i.started_at)::date, COUNT(*) FROM interactions i
+    WHERE i.started_at >= '2026-01-01' AND i.started_at < '2026-10-03' GROUP BY 1
+- id: t019
+  cat: msa
+  q: كم محادثة جاءت من عملاء مصريين في الربع الثالث؟
+  sql: |
+    SELECT COUNT(*) FROM interactions i JOIN customers c ON c.customer_id = i.customer_id
+    WHERE c.nationality = 'Egyptian' AND i.started_at >= '2026-07-01' AND i.started_at < '2026-10-01'
+- id: t020
+  cat: msa
+  q: ما أكثر سبب لتواصل العملاء هذا العام؟
+  sql: |
+    SELECT ia.intent FROM interactions i JOIN interaction_analysis ia ON ia.interaction_id = i.interaction_id
+    WHERE i.started_at >= '2026-01-01' AND i.started_at < '2026-10-03' GROUP BY ia.intent ORDER BY COUNT(*) DESC LIMIT 1
+- id: t021
+  cat: msa
+  q: كم محادثة عن التأشيرات وصلت عبر إنستغرام في الشهر الماضي؟
+  sql: |
+    SELECT COUNT(*) FROM interactions i JOIN interaction_analysis ia ON ia.interaction_id = i.interaction_id
+    WHERE ia.service = 'visa' AND i.channel = 'instagram' AND i.started_at >= '2026-09-01' AND i.started_at < '2026-10-01'
+- id: t022
+  cat: msa
+  q: ما متوسط تقييم جودة الموظفين في الشهر الماضي؟
+  sql: |
+    SELECT AVG(e.final_score) FROM agent_evaluations e
+    JOIN interactions i ON i.interaction_id = e.interaction_id JOIN agents a ON a.agent_id = e.agent_id
+    WHERE e.contract_status = 'ok' AND e.gradeable AND e.final_score IS NOT NULL AND NOT a.is_bot
+      AND i.started_at >= '2026-09-01' AND i.started_at < '2026-10-01'
+- id: t023
+  cat: msa
+  q: من الموظف صاحب أعلى متوسط تقييم جودة هذا العام؟
+  sql: |
+    SELECT a.full_name FROM agent_evaluations e
+    JOIN interactions i ON i.interaction_id = e.interaction_id JOIN agents a ON a.agent_id = e.agent_id
+    WHERE e.contract_status = 'ok' AND e.gradeable AND e.final_score IS NOT NULL AND NOT a.is_bot
+      AND i.started_at >= '2026-01-01' AND i.started_at < '2026-10-03'
+    GROUP BY a.full_name ORDER BY AVG(e.final_score) DESC LIMIT 1
+- id: t024
+  cat: msa
+  q: ما متوسط تقييم الجودة لكل موظف في الربع الثالث؟
+  sql: |
+    SELECT a.full_name, AVG(e.final_score) FROM agent_evaluations e
+    JOIN interactions i ON i.interaction_id = e.interaction_id JOIN agents a ON a.agent_id = e.agent_id
+    WHERE e.contract_status = 'ok' AND e.gradeable AND e.final_score IS NOT NULL AND NOT a.is_bot
+      AND i.started_at >= '2026-07-01' AND i.started_at < '2026-10-01'
+    GROUP BY a.full_name
+- id: t025
+  cat: msa
+  q: كم محادثة تم تقييمها في سبتمبر؟
+  sql: |
+    SELECT COUNT(*) FROM agent_evaluations e
+    JOIN interactions i ON i.interaction_id = e.interaction_id JOIN agents a ON a.agent_id = e.agent_id
+    WHERE e.contract_status = 'ok' AND e.gradeable AND e.final_score IS NOT NULL AND NOT a.is_bot
+      AND i.started_at >= '2026-09-01' AND i.started_at < '2026-10-01'
+- id: t026
+  cat: msa
+  q: ما نسبة التقييمات الممتازة لفريق المبيعات هذا العام؟
+  sql: |
+    SELECT 100.0 * COUNT(*) FILTER (WHERE e.performance_level = 'Excellent') / COUNT(*) FROM agent_evaluations e
+    JOIN interactions i ON i.interaction_id = e.interaction_id JOIN agents a ON a.agent_id = e.agent_id
+    WHERE e.contract_status = 'ok' AND e.gradeable AND e.final_score IS NOT NULL AND NOT a.is_bot
+      AND a.team = 'sales' AND i.started_at >= '2026-01-01' AND i.started_at < '2026-10-03'
+- id: t027
+  cat: msa
+  q: ما متوسط درجة التعامل مع الاعتراضات لكل موظف؟
+  sql: |
+    SELECT a.full_name, AVG(e.m3_objections) FROM agent_evaluations e JOIN agents a ON a.agent_id = e.agent_id
+    WHERE e.contract_status = 'ok' AND e.gradeable AND e.final_score IS NOT NULL AND NOT a.is_bot
+    GROUP BY a.full_name
+- id: t028
+  cat: msa
+  q: أي موظف لديه أضعف متوسط في درجة الإغلاق هذا العام؟
+  sql: |
+    SELECT a.full_name FROM agent_evaluations e
+    JOIN interactions i ON i.interaction_id = e.interaction_id JOIN agents a ON a.agent_id = e.agent_id
+    WHERE e.contract_status = 'ok' AND e.gradeable AND e.final_score IS NOT NULL AND NOT a.is_bot
+      AND i.started_at >= '2026-01-01' AND i.started_at < '2026-10-03'
+    GROUP BY a.full_name ORDER BY AVG(e.m5_closing) ASC LIMIT 1
+- id: t029
+  cat: msa
+  q: ما متوسط تقييم سارة القحطاني في الشهر الماضي؟
+  sql: |
+    SELECT AVG(e.final_score) FROM agent_evaluations e
+    JOIN interactions i ON i.interaction_id = e.interaction_id JOIN agents a ON a.agent_id = e.agent_id
+    WHERE e.contract_status = 'ok' AND e.gradeable AND e.final_score IS NOT NULL AND NOT a.is_bot
+      AND a.full_name = 'سارة القحطاني' AND i.started_at >= '2026-09-01' AND i.started_at < '2026-10-01'
+- id: t030
+  cat: msa
+  q: كم تقييمًا بمستوى أقل من المتوسط حصل عليه فهد الحربي هذا العام؟
+  sql: |
+    SELECT COUNT(*) FROM agent_evaluations e
+    JOIN interactions i ON i.interaction_id = e.interaction_id JOIN agents a ON a.agent_id = e.agent_id
+    WHERE e.contract_status = 'ok' AND e.gradeable AND e.final_score IS NOT NULL AND NOT a.is_bot
+      AND a.full_name = 'فهد الحربي' AND e.performance_level = 'Below Average'
+      AND i.started_at >= '2026-01-01' AND i.started_at < '2026-10-03'
+- id: t031
+  cat: msa
+  q: ما متوسط تقييم الجودة حسب القناة؟
+  sql: |
+    SELECT i.channel, AVG(e.final_score) FROM agent_evaluations e
+    JOIN interactions i ON i.interaction_id = e.interaction_id JOIN agents a ON a.agent_id = e.agent_id
+    WHERE e.contract_status = 'ok' AND e.gradeable AND e.final_score IS NOT NULL AND NOT a.is_bot
+    GROUP BY i.channel
+- id: t032
+  cat: msa
+  q: كيف تغيّر متوسط تقييم الجودة من شهر لآخر هذا العام؟
+  sql: |
+    SELECT date_trunc('month', i.started_at)::date, AVG(e.final_score) FROM agent_evaluations e
+    JOIN interactions i ON i.interaction_id = e.interaction_id JOIN agents a ON a.agent_id = e.agent_id
+    WHERE e.contract_status = 'ok' AND e.gradeable AND e.final_score IS NOT NULL AND NOT a.is_bot
+      AND i.started_at >= '2026-01-01' AND i.started_at < '2026-10-03'
+    GROUP BY 1
+- id: t033
+  cat: msa
+  q: ما متوسط درجة الاستقبال لفريق خدمة العملاء؟
+  sql: |
+    SELECT AVG(e.m1_reception) FROM agent_evaluations e JOIN agents a ON a.agent_id = e.agent_id
+    WHERE e.contract_status = 'ok' AND e.gradeable AND e.final_score IS NOT NULL AND NOT a.is_bot AND a.team = 'support'
+- id: t034
+  cat: msa
+  q: كم بلغت المبيعات في الشهر الماضي؟
+  sql: SELECT SUM(d.amount) FROM deals d WHERE d.stage_semantic = 'S' AND d.close_date BETWEEN '2026-09-01' AND '2026-09-30'
+- id: t035
+  cat: msa
+  q: ما إجمالي المبيعات منذ بداية العام؟
+  sql: SELECT SUM(d.amount) FROM deals d WHERE d.stage_semantic = 'S' AND d.close_date BETWEEN '2026-01-01' AND '2026-10-02'
+- id: t036
+  cat: msa
+  q: كم صفقة ناجحة أغلقنا في الربع الثالث؟
+  sql: SELECT COUNT(*) FROM deals d WHERE d.stage_semantic = 'S' AND d.close_date BETWEEN '2026-07-01' AND '2026-09-30'
+- id: t037
+  cat: msa
+  q: ما نسبة إغلاق الصفقات في أغسطس؟
+  sql: |
+    SELECT 100.0 * COUNT(*) FILTER (WHERE d.stage_semantic = 'S') / COUNT(*) FROM deals d
+    WHERE d.stage_semantic IN ('S', 'F') AND d.close_date BETWEEN '2026-08-01' AND '2026-08-31'
+- id: t038
+  cat: msa
+  q: من الموظف الذي حقق أعلى مبيعات هذا العام؟
+  sql: |
+    SELECT a.full_name FROM deals d JOIN agents a ON a.agent_id = d.agent_id
+    WHERE d.stage_semantic = 'S' AND d.close_date BETWEEN '2026-01-01' AND '2026-10-02'
+    GROUP BY a.full_name ORDER BY SUM(d.amount) DESC LIMIT 1
+- id: t039
+  cat: msa
+  q: ما مبيعات كل موظف في الشهر الماضي؟
+  sql: |
+    SELECT a.full_name, SUM(d.amount) FROM deals d JOIN agents a ON a.agent_id = d.agent_id
+    WHERE d.stage_semantic = 'S' AND d.close_date BETWEEN '2026-09-01' AND '2026-09-30' GROUP BY a.full_name
+- id: t040
+  cat: msa
+  q: ما متوسط قيمة الصفقة الناجحة في الباقات السياحية؟
+  sql: SELECT AVG(d.amount) FROM deals d WHERE d.stage_semantic = 'S' AND d.service = 'package'
+- id: t041
+  cat: msa
+  q: كم عدد الصفقات المفتوحة حاليًا؟
+  sql: SELECT COUNT(*) FROM deals d WHERE d.stage_semantic = 'P'
+- id: t042
+  cat: msa
+  q: ما القيمة الإجمالية للصفقات المفتوحة حاليًا؟
+  sql: SELECT SUM(d.amount) FROM deals d WHERE d.stage_semantic = 'P'
+- id: t043
+  cat: msa
+  q: كم صفقة جديدة فُتحت في سبتمبر؟
+  sql: SELECT COUNT(*) FROM deals d WHERE d.created_at_src >= '2026-09-01' AND d.created_at_src < '2026-10-01'
+- id: t044
+  cat: msa
+  q: ما المبيعات حسب نوع الخدمة هذا العام؟
+  sql: |
+    SELECT d.service, SUM(d.amount) FROM deals d
+    WHERE d.stage_semantic = 'S' AND d.close_date BETWEEN '2026-01-01' AND '2026-10-02' GROUP BY d.service
+- id: t045
+  cat: msa
+  q: ما المبيعات الشهرية لهذا العام؟
+  sql: |
+    SELECT date_trunc('month', d.close_date)::date, SUM(d.amount) FROM deals d
+    WHERE d.stage_semantic = 'S' AND d.close_date BETWEEN '2026-01-01' AND '2026-10-02' GROUP BY 1
+- id: t046
+  cat: msa
+  q: ما نسبة إغلاق الصفقات القادمة من واتساب مقارنة بإنستغرام؟
+  sql: |
+    SELECT d.source_channel, 100.0 * COUNT(*) FILTER (WHERE d.stage_semantic = 'S') / COUNT(*) FROM deals d
+    WHERE d.stage_semantic IN ('S', 'F') AND d.source_channel IN ('whatsapp', 'instagram') GROUP BY d.source_channel
+- id: t047
+  cat: msa
+  q: كم صفقة خسرناها في الشهر الماضي؟
+  sql: SELECT COUNT(*) FROM deals d WHERE d.stage_semantic = 'F' AND d.close_date BETWEEN '2026-09-01' AND '2026-09-30'
+- id: t048
+  cat: msa
+  q: كم بلغت مبيعات العمرة في رمضان؟
+  sql: SELECT SUM(d.amount) FROM deals d WHERE d.stage_semantic = 'S' AND d.service = 'umrah' AND d.close_date BETWEEN '2026-02-18' AND '2026-03-19'
+- id: t049
+  cat: msa
+  q: ما قيمة المبيعات للعملاء المصريين هذا العام؟
+  sql: |
+    SELECT SUM(d.amount) FROM deals d JOIN customers c ON c.customer_id = d.customer_id
+    WHERE d.stage_semantic = 'S' AND c.nationality = 'Egyptian' AND d.close_date BETWEEN '2026-01-01' AND '2026-10-02'
+- id: t050
+  cat: msa
+  q: ما متوسط قيمة الصفقة الناجحة لكل موظف في الربع الثالث؟
+  sql: |
+    SELECT a.full_name, AVG(d.amount) FROM deals d JOIN agents a ON a.agent_id = d.agent_id
+    WHERE d.stage_semantic = 'S' AND d.close_date BETWEEN '2026-07-01' AND '2026-09-30' GROUP BY a.full_name
+- id: t051
+  cat: msa
+  q: ما نسبة إغلاق الصفقات للعملاء الساخنين؟
+  sql: |
+    SELECT 100.0 * COUNT(*) FILTER (WHERE d.stage_semantic = 'S') / COUNT(*) FROM deals d
+    WHERE d.stage_semantic IN ('S', 'F') AND d.lead_temp = 'hot'
+- id: t052
+  cat: msa
+  q: كم بلغت مبيعات ريم الزهراني في صيف 2026؟
+  sql: |
+    SELECT SUM(d.amount) FROM deals d JOIN agents a ON a.agent_id = d.agent_id
+    WHERE d.stage_semantic = 'S' AND a.full_name = 'ريم الزهراني' AND d.close_date BETWEEN '2026-06-01' AND '2026-08-31'
+- id: t053
+  cat: msa
+  q: كم وعد متابعة قدّمه الموظفون في الشهر الماضي؟
+  sql: SELECT COUNT(*) FROM follow_ups f WHERE f.promised_at >= '2026-09-01' AND f.promised_at < '2026-10-01'
+- id: t054
+  cat: msa
+  q: ما نسبة الالتزام بالمتابعة لكل موظف هذا العام؟
+  sql: |
+    SELECT a.full_name, 100.0 * COUNT(*) FILTER (WHERE f.status = 'fulfilled') / COUNT(*) FILTER (WHERE f.status IN ('fulfilled', 'late', 'missed'))
+    FROM follow_ups f JOIN agents a ON a.agent_id = f.agent_id
+    WHERE f.promised_at >= '2026-01-01' AND f.promised_at < '2026-10-03' GROUP BY a.full_name
+- id: t055
+  cat: msa
+  q: كم متابعة متأخرة لم تُنفذ حتى الآن؟
+  sql: SELECT COUNT(*) FROM follow_ups f WHERE f.status = 'open' AND f.due_at < '2026-10-02'
+- id: t056
+  cat: msa
+  q: من الموظف الذي لديه أكبر عدد من المتابعات المتأخرة حاليًا؟
+  sql: |
+    SELECT a.full_name FROM follow_ups f JOIN agents a ON a.agent_id = f.agent_id
+    WHERE f.status = 'open' AND f.due_at < '2026-10-02' GROUP BY a.full_name ORDER BY COUNT(*) DESC LIMIT 1
+- id: t057
+  cat: msa
+  q: كم متابعة تأخرت أو فاتت في الربع الثالث؟
+  sql: SELECT COUNT(*) FROM follow_ups f WHERE f.status IN ('late', 'missed') AND f.promised_at >= '2026-07-01' AND f.promised_at < '2026-10-01'
+- id: t058
+  cat: msa
+  q: ما متوسط عدد الساعات اللازمة لتنفيذ المتابعة؟
+  sql: SELECT AVG(f.hours_to_fulfil) FROM follow_ups f WHERE f.status = 'fulfilled'
+- id: t059
+  cat: msa
+  q: كم عميلًا جديدًا انضم إلينا في الشهر الماضي؟
+  sql: SELECT COUNT(*) FROM customers c WHERE c.first_seen_at >= '2026-09-01' AND c.first_seen_at < '2026-10-01'
+- id: t060
+  cat: msa
+  q: كم عدد العملاء الجدد في كل شهر من هذا العام؟
+  sql: |
+    SELECT date_trunc('month', c.first_seen_at)::date, COUNT(*) FROM customers c
+    WHERE c.first_seen_at >= '2026-01-01' AND c.first_seen_at < '2026-10-03' GROUP BY 1
+- id: t061
+  cat: msa
+  q: ما إجمالي عدد العملاء المسجلين لدينا؟
+  sql: SELECT COUNT(*) FROM customers
+- id: t062
+  cat: msa
+  q: كم عدد العملاء حسب الجنسية؟
+  sql: SELECT c.nationality, COUNT(*) FROM customers c GROUP BY c.nationality
+- id: t063
+  cat: msa
+  q: ما أكثر ثلاث مدن يأتي منها العملاء الجدد هذا العام؟
+  sql: |
+    SELECT c.residence_city FROM customers c WHERE c.first_seen_at >= '2026-01-01' AND c.first_seen_at < '2026-10-03'
+    GROUP BY c.residence_city ORDER BY COUNT(*) DESC LIMIT 3
+- id: t064
+  cat: msa
+  q: قارن عدد المحادثات في سبتمبر بعددها في أغسطس.
+  sql: |
+    SELECT COUNT(*) FILTER (WHERE i.started_at >= '2026-09-01' AND i.started_at < '2026-10-01'),
+           COUNT(*) FILTER (WHERE i.started_at >= '2026-08-01' AND i.started_at < '2026-09-01')
+    FROM interactions i
+- id: t065
+  cat: msa
+  q: هل ارتفعت المبيعات في الربع الثالث مقارنة بالربع الثاني؟
+  sql: |
+    SELECT SUM(d.amount) FILTER (WHERE d.close_date BETWEEN '2026-07-01' AND '2026-09-30'),
+           SUM(d.amount) FILTER (WHERE d.close_date BETWEEN '2026-04-01' AND '2026-06-30')
+    FROM deals d WHERE d.stage_semantic = 'S'
+- id: t066
+  cat: msa
+  q: قارن متوسط تقييم الجودة في الشهر الماضي بالشهر الذي قبله.
+  sql: |
+    SELECT AVG(e.final_score) FILTER (WHERE i.started_at >= '2026-09-01' AND i.started_at < '2026-10-01'),
+           AVG(e.final_score) FILTER (WHERE i.started_at >= '2026-08-01' AND i.started_at < '2026-09-01')
+    FROM agent_evaluations e JOIN interactions i ON i.interaction_id = e.interaction_id JOIN agents a ON a.agent_id = e.agent_id
+    WHERE e.contract_status = 'ok' AND e.gradeable AND e.final_score IS NOT NULL AND NOT a.is_bot
+- id: t067
+  cat: msa
+  q: ما متوسط عدد الأيام اللازمة لإغلاق الصفقة الناجحة؟
+  sql: SELECT AVG(d.close_date - d.created_at_src::date) FROM deals d WHERE d.stage_semantic = 'S'
+- id: t068
+  cat: msa
+  q: في أي ساعة من اليوم تصلنا أكبر عدد من المحادثات؟
+  sql: SELECT EXTRACT(HOUR FROM i.started_at) FROM interactions i GROUP BY 1 ORDER BY COUNT(*) DESC LIMIT 1
+- id: t069
+  cat: msa
+  q: كم عميلًا لديه أكثر من صفقة ناجحة واحدة؟
+  sql: SELECT COUNT(*) FROM (SELECT d.customer_id FROM deals d WHERE d.stage_semantic = 'S' GROUP BY d.customer_id HAVING COUNT(*) > 1) t
+- id: t070
+  cat: msa
+  q: كم عميلًا لم يتواصل معنا منذ أكثر من 90 يومًا؟
+  sql: SELECT COUNT(*) FROM customers c WHERE c.last_seen_at < '2026-07-04'
+- id: t071
+  cat: msa
+  q: كم عميلًا تواصل معنا أكثر من مرة؟
+  sql: SELECT COUNT(*) FROM (SELECT i.customer_id FROM interactions i GROUP BY i.customer_id HAVING COUNT(*) > 1) t
+- id: t072
+  cat: msa
+  q: كم عدد الصفقات الناجحة لكل قناة هذا العام؟
+  sql: |
+    SELECT d.source_channel, COUNT(*) FROM deals d
+    WHERE d.stage_semantic = 'S' AND d.close_date BETWEEN '2026-01-01' AND '2026-10-02' GROUP BY d.source_channel
+- id: t073
+  cat: msa
+  q: كم محادثة تعامل معها كل موظف في الشهر الماضي؟
+  sql: |
+    SELECT a.full_name, COUNT(*) FROM interactions i JOIN agents a ON a.agent_id = i.agent_id
+    WHERE i.started_at >= '2026-09-01' AND i.started_at < '2026-10-01' GROUP BY a.full_name
+- id: t074
+  cat: msa
+  q: ما عدد المحادثات التي ذكر فيها العملاء ميزانية بالجنيه المصري؟
+  sql: SELECT COUNT(*) FROM interaction_analysis ia WHERE ia.budget_currency = 'EGP'
+- id: t075
+  cat: msa
+  q: ما نسبة المحادثات التي بدأت خارج الدوام في رمضان؟
+  sql: |
+    SELECT 100.0 * COUNT(*) FILTER (WHERE i.is_after_hours) / COUNT(*) FROM interactions i
+    WHERE i.started_at >= '2026-02-18' AND i.started_at < '2026-03-20'
+
+# ============================================================== Saudi dialect
+- id: t076
+  cat: saudi
+  q: كم محادثة جتنا الشهر اللي فات؟
+  sql: SELECT COUNT(*) FROM interactions i WHERE i.started_at >= '2026-09-01' AND i.started_at < '2026-10-01'
+- id: t077
+  cat: saudi
+  q: كم واحد كلمنا على الواتس هالسنة؟
+  sql: SELECT COUNT(DISTINCT i.customer_id) FROM interactions i WHERE i.channel = 'whatsapp' AND i.started_at >= '2026-01-01' AND i.started_at < '2026-10-03'
+- id: t078
+  cat: saudi
+  q: وش نسبة المحادثات اللي رد عليها البوت هالشهر؟
+  sql: SELECT 100.0 * COUNT(*) FILTER (WHERE i.is_bot_handled) / COUNT(*) FROM interactions i WHERE i.started_at >= '2026-10-01' AND i.started_at < '2026-10-03'
+- id: t079
+  cat: saudi
+  q: كم ياخذون الموظفين عشان يردون أول مرة الشهر اللي فات؟ بالدقايق
+  sql: SELECT AVG(i.first_response_seconds) / 60.0 FROM interactions i WHERE NOT i.is_bot_handled AND i.started_at >= '2026-09-01' AND i.started_at < '2026-10-01'
+- id: t080
+  cat: saudi
+  q: مين أسرع موظف بالرد هالسنة؟
+  sql: |
+    SELECT a.full_name FROM interactions i JOIN agents a ON a.agent_id = i.agent_id
+    WHERE NOT i.is_bot_handled AND i.started_at >= '2026-01-01' AND i.started_at < '2026-10-03'
+    GROUP BY a.full_name ORDER BY AVG(i.first_response_seconds) ASC LIMIT 1
+- id: t081
+  cat: saudi
+  q: وش أكثر وجهة يسألون عنها الناس هالسنة؟
+  sql: |
+    SELECT d.canonical_name FROM interactions i
+    JOIN interaction_analysis ia ON ia.interaction_id = i.interaction_id
+    JOIN interaction_destinations x ON x.analysis_id = ia.analysis_id AND x.role = 'destination'
+    JOIN destinations d ON d.destination_id = x.destination_id
+    WHERE i.started_at >= '2026-01-01' AND i.started_at < '2026-10-03'
+    GROUP BY d.canonical_name ORDER BY COUNT(DISTINCT i.interaction_id) DESC LIMIT 1
+- id: t082
+  cat: saudi
+  q: كم محادثة سألوا فيها عن طرابزون بالصيف؟
+  sql: |
+    SELECT COUNT(DISTINCT i.interaction_id) FROM interactions i
+    JOIN interaction_analysis ia ON ia.interaction_id = i.interaction_id
+    JOIN interaction_destinations x ON x.analysis_id = ia.analysis_id AND x.role = 'destination'
+    JOIN destinations d ON d.destination_id = x.destination_id
+    WHERE d.canonical_name = 'Trabzon' AND i.started_at >= '2026-06-01' AND i.started_at < '2026-09-01'
+- id: t083
+  cat: saudi
+  q: أبي عدد المحادثات حسب القناة هالسنة
+  sql: SELECT i.channel, COUNT(*) FROM interactions i WHERE i.started_at >= '2026-01-01' AND i.started_at < '2026-10-03' GROUP BY i.channel
+- id: t084
+  cat: saudi
+  q: كم عميل حار جانا الشهر اللي فات؟
+  sql: |
+    SELECT COUNT(*) FROM interactions i JOIN interaction_analysis ia ON ia.interaction_id = i.interaction_id
+    WHERE ia.lead_temp = 'hot' AND i.started_at >= '2026-09-01' AND i.started_at < '2026-10-01'
+- id: t085
+  cat: saudi
+  q: كم دخلنا الشهر اللي فات؟
+  sql: SELECT SUM(d.amount) FROM deals d WHERE d.stage_semantic = 'S' AND d.close_date BETWEEN '2026-09-01' AND '2026-09-30'
+- id: t086
+  cat: saudi
+  q: كم بعنا من أول السنة؟
+  sql: SELECT SUM(d.amount) FROM deals d WHERE d.stage_semantic = 'S' AND d.close_date BETWEEN '2026-01-01' AND '2026-10-02'
+- id: t087
+  cat: saudi
+  q: مين أشطر موظف مبيعات هالسنة؟
+  sql: |
+    SELECT a.full_name FROM deals d JOIN agents a ON a.agent_id = d.agent_id
+    WHERE d.stage_semantic = 'S' AND d.close_date BETWEEN '2026-01-01' AND '2026-10-02'
+    GROUP BY a.full_name ORDER BY SUM(d.amount) DESC LIMIT 1
+- id: t088
+  cat: saudi
+  q: عطني مبيعات كل موظف في الربع الثالث
+  sql: |
+    SELECT a.full_name, SUM(d.amount) FROM deals d JOIN agents a ON a.agent_id = d.agent_id
+    WHERE d.stage_semantic = 'S' AND d.close_date BETWEEN '2026-07-01' AND '2026-09-30' GROUP BY a.full_name
+- id: t089
+  cat: saudi
+  q: كم صفقة قفلناها الشهر اللي فات؟
+  sql: SELECT COUNT(*) FROM deals d WHERE d.stage_semantic = 'S' AND d.close_date BETWEEN '2026-09-01' AND '2026-09-30'
+- id: t090
+  cat: saudi
+  q: كم صفقة طارت علينا الشهر اللي فات؟
+  sql: SELECT COUNT(*) FROM deals d WHERE d.stage_semantic = 'F' AND d.close_date BETWEEN '2026-09-01' AND '2026-09-30'
+- id: t091
+  cat: saudi
+  q: وش نسبة القفل عندنا هالسنة؟
+  sql: |
+    SELECT 100.0 * COUNT(*) FILTER (WHERE d.stage_semantic = 'S') / COUNT(*) FROM deals d
+    WHERE d.stage_semantic IN ('S', 'F') AND d.close_date BETWEEN '2026-01-01' AND '2026-10-02'
+- id: t092
+  cat: saudi
+  q: كم صفقة مفتوحة للحين؟
+  sql: SELECT COUNT(*) FROM deals d WHERE d.stage_semantic = 'P'
+- id: t093
+  cat: saudi
+  q: كم قيمة الصفقات اللي للحين ما انقفلت؟
+  sql: SELECT SUM(d.amount) FROM deals d WHERE d.stage_semantic = 'P'
+- id: t094
+  cat: saudi
+  q: كم متوسط الصفقة اللي نكسبها في الطيران؟
+  sql: SELECT AVG(d.amount) FROM deals d WHERE d.stage_semantic = 'S' AND d.service = 'flight'
+- id: t095
+  cat: saudi
+  q: وش أكثر خدمة نبيع فيها هالسنة؟
+  sql: |
+    SELECT d.service FROM deals d WHERE d.stage_semantic = 'S' AND d.close_date BETWEEN '2026-01-01' AND '2026-10-02'
+    GROUP BY d.service ORDER BY SUM(d.amount) DESC LIMIT 1
+- id: t096
+  cat: saudi
+  q: كم صفقة عمرة قفلناها في رمضان؟
+  sql: SELECT COUNT(*) FROM deals d WHERE d.stage_semantic = 'S' AND d.service = 'umrah' AND d.close_date BETWEEN '2026-02-18' AND '2026-03-19'
+- id: t097
+  cat: saudi
+  q: كم بعنا للمصريين بالصيف؟
+  sql: |
+    SELECT SUM(d.amount) FROM deals d JOIN customers c ON c.customer_id = d.customer_id
+    WHERE d.stage_semantic = 'S' AND c.nationality = 'Egyptian' AND d.close_date BETWEEN '2026-06-01' AND '2026-08-31'
+- id: t098
+  cat: saudi
+  q: كيف مبيعاتنا شهر بشهر هالسنة؟
+  sql: |
+    SELECT date_trunc('month', d.close_date)::date, SUM(d.amount) FROM deals d
+    WHERE d.stage_semantic = 'S' AND d.close_date BETWEEN '2026-01-01' AND '2026-10-02' GROUP BY 1
+- id: t099
+  cat: saudi
+  q: كم صفقة جديدة انفتحت هالأسبوع؟
+  sql: SELECT COUNT(*) FROM deals d WHERE d.created_at_src >= '2026-09-27' AND d.created_at_src < '2026-10-03'
+- id: t100
+  cat: saudi
+  q: كم صفقة جديدة انفتحت الأسبوع اللي فات؟
+  sql: SELECT COUNT(*) FROM deals d WHERE d.created_at_src >= '2026-09-20' AND d.created_at_src < '2026-09-27'
+- id: t101
+  cat: saudi
+  q: وش تقييم ريم هالسنة؟
+  sql: |
+    SELECT AVG(e.final_score) FROM agent_evaluations e
+    JOIN interactions i ON i.interaction_id = e.interaction_id JOIN agents a ON a.agent_id = e.agent_id
+    WHERE e.contract_status = 'ok' AND e.gradeable AND e.final_score IS NOT NULL AND NOT a.is_bot
+      AND a.full_name = 'ريم الزهراني' AND i.started_at >= '2026-01-01' AND i.started_at < '2026-10-03'
+- id: t102
+  cat: saudi
+  q: مين أضعف موظف في تقييم الجودة هالسنة؟
+  sql: |
+    SELECT a.full_name FROM agent_evaluations e
+    JOIN interactions i ON i.interaction_id = e.interaction_id JOIN agents a ON a.agent_id = e.agent_id
+    WHERE e.contract_status = 'ok' AND e.gradeable AND e.final_score IS NOT NULL AND NOT a.is_bot
+      AND i.started_at >= '2026-01-01' AND i.started_at < '2026-10-03'
+    GROUP BY a.full_name ORDER BY AVG(e.final_score) ASC LIMIT 1
+- id: t103
+  cat: saudi
+  q: كم محادثة انقيّمت الشهر اللي فات؟
+  sql: |
+    SELECT COUNT(*) FROM agent_evaluations e
+    JOIN interactions i ON i.interaction_id = e.interaction_id JOIN agents a ON a.agent_id = e.agent_id
+    WHERE e.contract_status = 'ok' AND e.gradeable AND e.final_score IS NOT NULL AND NOT a.is_bot
+      AND i.started_at >= '2026-09-01' AND i.started_at < '2026-10-01'
+- id: t104
+  cat: saudi
+  q: عطني متوسط تقييم الجودة لكل موظف هالسنة
+  sql: |
+    SELECT a.full_name, AVG(e.final_score) FROM agent_evaluations e
+    JOIN interactions i ON i.interaction_id = e.interaction_id JOIN agents a ON a.agent_id = e.agent_id
+    WHERE e.contract_status = 'ok' AND e.gradeable AND e.final_score IS NOT NULL AND NOT a.is_bot
+      AND i.started_at >= '2026-01-01' AND i.started_at < '2026-10-03'
+    GROUP BY a.full_name
+- id: t105
+  cat: saudi
+  q: كم نسبة التقييمات الممتازة الشهر اللي فات؟
+  sql: |
+    SELECT 100.0 * COUNT(*) FILTER (WHERE e.performance_level = 'Excellent') / COUNT(*) FROM agent_evaluations e
+    JOIN interactions i ON i.interaction_id = e.interaction_id JOIN agents a ON a.agent_id = e.agent_id
+    WHERE e.contract_status = 'ok' AND e.gradeable AND e.final_score IS NOT NULL AND NOT a.is_bot
+      AND i.started_at >= '2026-09-01' AND i.started_at < '2026-10-01'
+- id: t106
+  cat: saudi
+  q: وش متوسط درجة الإغلاق لفهد هالسنة؟
+  sql: |
+    SELECT AVG(e.m5_closing) FROM agent_evaluations e
+    JOIN interactions i ON i.interaction_id = e.interaction_id JOIN agents a ON a.agent_id = e.agent_id
+    WHERE e.contract_status = 'ok' AND e.gradeable AND e.final_score IS NOT NULL AND NOT a.is_bot
+      AND a.full_name = 'فهد الحربي' AND i.started_at >= '2026-01-01' AND i.started_at < '2026-10-03'
+- id: t107
+  cat: saudi
+  q: وش متوسط درجة الاستقبال عند فريق الدعم؟
+  sql: |
+    SELECT AVG(e.m1_reception) FROM agent_evaluations e JOIN agents a ON a.agent_id = e.agent_id
+    WHERE e.contract_status = 'ok' AND e.gradeable AND e.final_score IS NOT NULL AND NOT a.is_bot AND a.team = 'support'
+- id: t108
+  cat: saudi
+  q: كم وعد متابعة ما التزموا فيه هالسنة؟
+  sql: SELECT COUNT(*) FROM follow_ups f WHERE f.status IN ('late', 'missed') AND f.promised_at >= '2026-01-01' AND f.promised_at < '2026-10-03'
+- id: t109
+  cat: saudi
+  q: كم متابعة متأخرة للحين؟
+  sql: SELECT COUNT(*) FROM follow_ups f WHERE f.status = 'open' AND f.due_at < '2026-10-02'
+- id: t110
+  cat: saudi
+  q: عطني عدد المتابعات المتأخرة حاليًا لكل موظف
+  sql: |
+    SELECT a.full_name, COUNT(*) FROM follow_ups f JOIN agents a ON a.agent_id = f.agent_id
+    WHERE f.status = 'open' AND f.due_at < '2026-10-02' GROUP BY a.full_name
+- id: t111
+  cat: saudi
+  q: وش نسبة التزام أحمد بالمتابعة؟
+  sql: |
+    SELECT 100.0 * COUNT(*) FILTER (WHERE f.status = 'fulfilled') / COUNT(*) FILTER (WHERE f.status IN ('fulfilled', 'late', 'missed'))
+    FROM follow_ups f JOIN agents a ON a.agent_id = f.agent_id WHERE a.full_name = 'أحمد الغامدي'
+- id: t112
+  cat: saudi
+  q: كم عميل جديد جانا هالسنة؟
+  sql: SELECT COUNT(*) FROM customers c WHERE c.first_seen_at >= '2026-01-01' AND c.first_seen_at < '2026-10-03'
+- id: t113
+  cat: saudi
+  q: كم عميل جديد من جدة جانا الشهر اللي فات؟
+  sql: SELECT COUNT(*) FROM customers c WHERE c.residence_city = 'Jeddah' AND c.first_seen_at >= '2026-09-01' AND c.first_seen_at < '2026-10-01'
+- id: t114
+  cat: saudi
+  q: كم عدد عملائنا كلهم؟
+  sql: SELECT COUNT(*) FROM customers
+- id: t115
+  cat: saudi
+  q: قارن لي عدد محادثات هالشهر بالشهر اللي فات
+  sql: |
+    SELECT COUNT(*) FILTER (WHERE i.started_at >= '2026-10-01' AND i.started_at < '2026-10-03'),
+           COUNT(*) FILTER (WHERE i.started_at >= '2026-09-01' AND i.started_at < '2026-10-01')
+    FROM interactions i
+- id: t116
+  cat: saudi
+  q: قارن لي مبيعات أغسطس بيوليو
+  sql: |
+    SELECT SUM(d.amount) FILTER (WHERE d.close_date BETWEEN '2026-08-01' AND '2026-08-31'),
+           SUM(d.amount) FILTER (WHERE d.close_date BETWEEN '2026-07-01' AND '2026-07-31')
+    FROM deals d WHERE d.stage_semantic = 'S'
+- id: t117
+  cat: saudi
+  q: كم نسبة المحادثات اللي تجينا بعد الدوام؟
+  sql: SELECT 100.0 * COUNT(*) FILTER (WHERE i.is_after_hours) / COUNT(*) FROM interactions i
+- id: t118
+  cat: saudi
+  q: كم كويتي كلمنا هالسنة؟
+  sql: |
+    SELECT COUNT(DISTINCT i.customer_id) FROM interactions i JOIN customers c ON c.customer_id = i.customer_id
+    WHERE c.nationality = 'Kuwaiti' AND i.started_at >= '2026-01-01' AND i.started_at < '2026-10-03'
+- id: t119
+  cat: saudi
+  q: وش أكثر مدينة يجونا منها عملاء؟
+  sql: SELECT c.residence_city FROM customers c GROUP BY c.residence_city ORDER BY COUNT(*) DESC LIMIT 1
+- id: t120
+  cat: saudi
+  q: كم مسافر بالمتوسط في الطلب الواحد؟
+  sql: SELECT AVG(ia.travelers_total) FROM interaction_analysis ia
+- id: t121
+  cat: saudi
+  q: وش أكثر سبب يكلمونا عشانه الشهر اللي فات؟
+  sql: |
+    SELECT ia.intent FROM interactions i JOIN interaction_analysis ia ON ia.interaction_id = i.interaction_id
+    WHERE i.started_at >= '2026-09-01' AND i.started_at < '2026-10-01' GROUP BY ia.intent ORDER BY COUNT(*) DESC LIMIT 1
+- id: t122
+  cat: saudi
+  q: كم شكوى جتنا هالسنة؟
+  sql: |
+    SELECT COUNT(*) FROM interactions i JOIN interaction_analysis ia ON ia.interaction_id = i.interaction_id
+    WHERE ia.intent = 'complaint' AND i.started_at >= '2026-01-01' AND i.started_at < '2026-10-03'
+- id: t123
+  cat: saudi
+  q: كم محادثة عن الفنادق جتنا في يوليو؟
+  sql: |
+    SELECT COUNT(*) FROM interactions i JOIN interaction_analysis ia ON ia.interaction_id = i.interaction_id
+    WHERE ia.service = 'hotel' AND i.started_at >= '2026-07-01' AND i.started_at < '2026-08-01'
+- id: t124
+  cat: saudi
+  q: الساعة كم يكثر علينا ضغط المحادثات؟
+  sql: SELECT EXTRACT(HOUR FROM i.started_at) FROM interactions i GROUP BY 1 ORDER BY COUNT(*) DESC LIMIT 1
+- id: t125
+  cat: saudi
+  q: كم يوم ناخذ بالمتوسط عشان نقفل الصفقة الناجحة؟
+  sql: SELECT AVG(d.close_date - d.created_at_src::date) FROM deals d WHERE d.stage_semantic = 'S'
+- id: t126
+  cat: saudi
+  q: كم عميل ما كلمنا من أكثر من 90 يوم؟
+  sql: SELECT COUNT(*) FROM customers c WHERE c.last_seen_at < '2026-07-04'
+- id: t127
+  cat: saudi
+  q: كم واحد اشترى منا أكثر من مرة؟
+  sql: SELECT COUNT(*) FROM (SELECT d.customer_id FROM deals d WHERE d.stage_semantic = 'S' GROUP BY d.customer_id HAVING COUNT(*) > 1) t
+- id: t128
+  cat: saudi
+  q: وش أكثر قناة تجيب لنا صفقات ناجحة؟
+  sql: SELECT d.source_channel FROM deals d WHERE d.stage_semantic = 'S' GROUP BY d.source_channel ORDER BY COUNT(*) DESC LIMIT 1
+- id: t129
+  cat: saudi
+  q: كم صفقة كسبناها من الإنستا هالسنة؟
+  sql: SELECT COUNT(*) FROM deals d WHERE d.stage_semantic = 'S' AND d.source_channel = 'instagram' AND d.close_date BETWEEN '2026-01-01' AND '2026-10-02'
+- id: t130
+  cat: saudi
+  q: عطني عدد محادثات العمرة كل شهر هالسنة
+  sql: |
+    SELECT date_trunc('month', i.started_at)::date, COUNT(*) FROM interactions i
+    JOIN interaction_analysis ia ON ia.interaction_id = i.interaction_id
+    WHERE ia.service = 'umrah' AND i.started_at >= '2026-01-01' AND i.started_at < '2026-10-03' GROUP BY 1
+- id: t131
+  cat: saudi
+  q: كم محادثة جتنا يوم اليوم الوطني؟
+  sql: SELECT COUNT(*) FROM interactions i WHERE i.started_at >= '2026-09-23' AND i.started_at < '2026-09-24'
+- id: t132
+  cat: saudi
+  q: كم محادثة جتنا أمس؟
+  sql: SELECT COUNT(*) FROM interactions i WHERE i.started_at >= '2026-10-01' AND i.started_at < '2026-10-02'
+- id: t133
+  cat: saudi
+  q: كم محادثة جتنا آخر 7 أيام؟
+  sql: SELECT COUNT(*) FROM interactions i WHERE i.started_at >= '2026-09-26' AND i.started_at < '2026-10-03'
+- id: t134
+  cat: saudi
+  q: كم بعنا آخر 3 شهور؟
+  sql: SELECT SUM(d.amount) FROM deals d WHERE d.stage_semantic = 'S' AND d.close_date BETWEEN '2026-07-01' AND '2026-09-30'
+- id: t135
+  cat: saudi
+  q: وش متوسط وقت أول رد عند محمد العتيبي بالدقايق؟
+  sql: |
+    SELECT AVG(i.first_response_seconds) / 60.0 FROM interactions i JOIN agents a ON a.agent_id = i.agent_id
+    WHERE NOT i.is_bot_handled AND a.full_name = 'محمد العتيبي'
+- id: t136
+  cat: saudi
+  q: مين أكثر موظف كلم عملاء حارين هالسنة؟
+  sql: |
+    SELECT a.full_name FROM interactions i JOIN agents a ON a.agent_id = i.agent_id
+    JOIN interaction_analysis ia ON ia.interaction_id = i.interaction_id
+    WHERE ia.lead_temp = 'hot' AND NOT a.is_bot AND i.started_at >= '2026-01-01' AND i.started_at < '2026-10-03'
+    GROUP BY a.full_name ORDER BY COUNT(*) DESC LIMIT 1
+- id: t137
+  cat: saudi
+  q: كم نسبة القفل لكل قناة؟
+  sql: |
+    SELECT d.source_channel, 100.0 * COUNT(*) FILTER (WHERE d.stage_semantic = 'S') / COUNT(*) FROM deals d
+    WHERE d.stage_semantic IN ('S', 'F') GROUP BY d.source_channel
+- id: t138
+  cat: saudi
+  q: كم صفقة فتحها كل موظف الشهر اللي فات؟
+  sql: |
+    SELECT a.full_name, COUNT(*) FROM deals d JOIN agents a ON a.agent_id = d.agent_id
+    WHERE d.created_at_src >= '2026-09-01' AND d.created_at_src < '2026-10-01' GROUP BY a.full_name
+- id: t139
+  cat: saudi
+  q: عطني أعلى ٣ موظفين في المبيعات بالربع الثالث
+  sql: |
+    SELECT a.full_name FROM deals d JOIN agents a ON a.agent_id = d.agent_id
+    WHERE d.stage_semantic = 'S' AND d.close_date BETWEEN '2026-07-01' AND '2026-09-30'
+    GROUP BY a.full_name ORDER BY SUM(d.amount) DESC LIMIT 3
+- id: t140
+  cat: saudi
+  q: كم عميل سعودي جديد جانا في رمضان؟
+  sql: SELECT COUNT(*) FROM customers c WHERE c.nationality = 'Saudi' AND c.first_seen_at >= '2026-02-18' AND c.first_seen_at < '2026-03-20'
+- id: t141
+  cat: saudi
+  q: كم بعنا تأشيرات هالسنة؟
+  sql: SELECT SUM(d.amount) FROM deals d WHERE d.stage_semantic = 'S' AND d.service = 'visa' AND d.close_date BETWEEN '2026-01-01' AND '2026-10-02'
+- id: t142
+  cat: saudi
+  q: وش متوسط تقييم الموظفين في محادثات الواتس؟
+  sql: |
+    SELECT AVG(e.final_score) FROM agent_evaluations e
+    JOIN interactions i ON i.interaction_id = e.interaction_id JOIN agents a ON a.agent_id = e.agent_id
+    WHERE e.contract_status = 'ok' AND e.gradeable AND e.final_score IS NOT NULL AND NOT a.is_bot AND i.channel = 'whatsapp'
+- id: t143
+  cat: saudi
+  q: كم محادثة خدمها البوت لحاله الشهر اللي فات؟
+  sql: SELECT COUNT(*) FROM interactions i WHERE i.is_bot_handled AND i.started_at >= '2026-09-01' AND i.started_at < '2026-10-01'
+- id: t144
+  cat: saudi
+  q: وش نسبة التقييمات الممتازة عند نورة؟
+  sql: |
+    SELECT 100.0 * COUNT(*) FILTER (WHERE e.performance_level = 'Excellent') / COUNT(*) FROM agent_evaluations e
+    JOIN agents a ON a.agent_id = e.agent_id
+    WHERE e.contract_status = 'ok' AND e.gradeable AND e.final_score IS NOT NULL AND NOT a.is_bot AND a.full_name = 'نورة الدوسري'
+- id: t145
+  cat: saudi
+  q: كم صفقة فندق مفتوحة للحين؟
+  sql: SELECT COUNT(*) FROM deals d WHERE d.stage_semantic = 'P' AND d.service = 'hotel'
+- id: t146
+  cat: saudi
+  q: كم وعد متابعة سووا الموظفين هالسنة؟
+  sql: SELECT COUNT(*) FROM follow_ups f WHERE f.promised_at >= '2026-01-01' AND f.promised_at < '2026-10-03'
+- id: t147
+  cat: saudi
+  q: كم ساعة ياخذون بالمتوسط عشان ينفذون المتابعة؟
+  sql: SELECT AVG(f.hours_to_fulfil) FROM follow_ups f WHERE f.status = 'fulfilled'
+- id: t148
+  cat: saudi
+  q: وش أكثر جنسية تكلمنا؟
+  sql: |
+    SELECT c.nationality FROM interactions i JOIN customers c ON c.customer_id = i.customer_id
+    GROUP BY c.nationality ORDER BY COUNT(*) DESC LIMIT 1
+- id: t149
+  cat: saudi
+  q: كم محادثة جتنا من ناس ساكنين بالرياض في أغسطس؟
+  sql: |
+    SELECT COUNT(*) FROM interactions i JOIN customers c ON c.customer_id = i.customer_id
+    WHERE c.residence_city = 'Riyadh' AND i.started_at >= '2026-08-01' AND i.started_at < '2026-09-01'
+- id: t150
+  cat: saudi
+  q: كم متوسط ميزانية اللي يبون عمرة بالريال؟
+  sql: SELECT AVG(ia.budget_amount) FROM interaction_analysis ia WHERE ia.service = 'umrah' AND ia.budget_currency = 'SAR'
+
+# ============================================================== typos / informal spelling
+- id: t151
+  cat: typo
+  q: كم المحادثات اللى جت الشهر الى فات
+  sql: SELECT COUNT(*) FROM interactions i WHERE i.started_at >= '2026-09-01' AND i.started_at < '2026-10-01'
+- id: t152
+  cat: typo
+  q: كم صفقه ناجحه قفلنا في اغسطس
+  sql: SELECT COUNT(*) FROM deals d WHERE d.stage_semantic = 'S' AND d.close_date BETWEEN '2026-08-01' AND '2026-08-31'
+- id: t153
+  cat: typo
+  q: وش اكثر وجهه يسالون عنها
+  sql: |
+    SELECT d.canonical_name FROM interaction_destinations x JOIN destinations d ON d.destination_id = x.destination_id
+    WHERE x.role = 'destination' GROUP BY d.canonical_name ORDER BY COUNT(DISTINCT x.analysis_id) DESC LIMIT 1
+- id: t154
+  cat: typo
+  q: كم محادثه عن استنبول هالسنه
+  sql: |
+    SELECT COUNT(DISTINCT i.interaction_id) FROM interactions i
+    JOIN interaction_analysis ia ON ia.interaction_id = i.interaction_id
+    JOIN interaction_destinations x ON x.analysis_id = ia.analysis_id AND x.role = 'destination'
+    JOIN destinations d ON d.destination_id = x.destination_id
+    WHERE d.canonical_name = 'Istanbul' AND i.started_at >= '2026-01-01' AND i.started_at < '2026-10-03'
+- id: t155
+  cat: typo
+  q: متوسط تقيم سارا القحطانى
+  sql: |
+    SELECT AVG(e.final_score) FROM agent_evaluations e JOIN agents a ON a.agent_id = e.agent_id
+    WHERE e.contract_status = 'ok' AND e.gradeable AND e.final_score IS NOT NULL AND NOT a.is_bot AND a.full_name = 'سارة القحطاني'
+- id: t156
+  cat: typo
+  q: كم عميل جديد في شهر ٩
+  sql: SELECT COUNT(*) FROM customers c WHERE c.first_seen_at >= '2026-09-01' AND c.first_seen_at < '2026-10-01'
+- id: t157
+  cat: typo
+  q: نسبة الاغلاق للواتساب
+  sql: |
+    SELECT 100.0 * COUNT(*) FILTER (WHERE d.stage_semantic = 'S') / COUNT(*) FROM deals d
+    WHERE d.stage_semantic IN ('S', 'F') AND d.source_channel = 'whatsapp'
+- id: t158
+  cat: typo
+  q: كم متابعه متاخره حاليا
+  sql: SELECT COUNT(*) FROM follow_ups f WHERE f.status = 'open' AND f.due_at < '2026-10-02'
+- id: t159
+  cat: typo
+  q: وقت اول رد للموظفين الشهر الماضى بالدقايق
+  sql: SELECT AVG(i.first_response_seconds) / 60.0 FROM interactions i WHERE NOT i.is_bot_handled AND i.started_at >= '2026-09-01' AND i.started_at < '2026-10-01'
+- id: t160
+  cat: typo
+  q: كم محادثة عن دبى في يوليو
+  sql: |
+    SELECT COUNT(DISTINCT i.interaction_id) FROM interactions i
+    JOIN interaction_analysis ia ON ia.interaction_id = i.interaction_id
+    JOIN interaction_destinations x ON x.analysis_id = ia.analysis_id AND x.role = 'destination'
+    JOIN destinations d ON d.destination_id = x.destination_id
+    WHERE d.canonical_name = 'Dubai' AND i.started_at >= '2026-07-01' AND i.started_at < '2026-08-01'
+- id: t161
+  cat: typo
+  q: مبيعات العمره في رمضان
+  sql: SELECT SUM(d.amount) FROM deals d WHERE d.stage_semantic = 'S' AND d.service = 'umrah' AND d.close_date BETWEEN '2026-02-18' AND '2026-03-19'
+- id: t162
+  cat: typo
+  q: كم صفقة مفتوحه الحين
+  sql: SELECT COUNT(*) FROM deals d WHERE d.stage_semantic = 'P'
+- id: t163
+  cat: typo
+  q: اعلى موظف مبيعات الربع التالت
+  sql: |
+    SELECT a.full_name FROM deals d JOIN agents a ON a.agent_id = d.agent_id
+    WHERE d.stage_semantic = 'S' AND d.close_date BETWEEN '2026-07-01' AND '2026-09-30'
+    GROUP BY a.full_name ORDER BY SUM(d.amount) DESC LIMIT 1
+- id: t164
+  cat: typo
+  q: كم عميل مصرى كلمنا السنادي
+  sql: |
+    SELECT COUNT(DISTINCT i.customer_id) FROM interactions i JOIN customers c ON c.customer_id = i.customer_id
+    WHERE c.nationality = 'Egyptian' AND i.started_at >= '2026-01-01' AND i.started_at < '2026-10-03'
+- id: t165
+  cat: typo
+  q: متوسط ميزانيه العملاء للفنادق بالريال
+  sql: SELECT AVG(ia.budget_amount) FROM interaction_analysis ia WHERE ia.service = 'hotel' AND ia.budget_currency = 'SAR'
+
+# ============================================================== multi-step
+- id: t166
+  cat: multistep
+  q: ما الموظفون الذين انخفض متوسط تقييم جودتهم في سبتمبر مقارنة بأغسطس؟
+  sql: |
+    WITH s AS (
+      SELECT a.full_name,
+             AVG(e.final_score) FILTER (WHERE i.started_at >= '2026-09-01' AND i.started_at < '2026-10-01') AS sep,
+             AVG(e.final_score) FILTER (WHERE i.started_at >= '2026-08-01' AND i.started_at < '2026-09-01') AS aug
+      FROM agent_evaluations e JOIN interactions i ON i.interaction_id = e.interaction_id JOIN agents a ON a.agent_id = e.agent_id
+      WHERE e.contract_status = 'ok' AND e.gradeable AND e.final_score IS NOT NULL AND NOT a.is_bot
+      GROUP BY a.full_name)
+    SELECT full_name FROM s WHERE sep < aug
+- id: t167
+  cat: multistep
+  q: كم عميلًا تواصل معنا هذا العام ولم تُفتح له أي صفقة؟
+  sql: |
+    SELECT COUNT(DISTINCT i.customer_id) FROM interactions i
+    WHERE i.started_at >= '2026-01-01' AND i.started_at < '2026-10-03'
+      AND NOT EXISTS (SELECT 1 FROM deals d WHERE d.customer_id = i.customer_id)
+- id: t168
+  cat: multistep
+  q: ما نسبة العملاء الذين تواصلوا معنا هذا العام وكسبنا معهم صفقة واحدة على الأقل؟
+  sql: |
+    SELECT 100.0 * COUNT(DISTINCT i.customer_id) FILTER (WHERE EXISTS (
+             SELECT 1 FROM deals d WHERE d.customer_id = i.customer_id AND d.stage_semantic = 'S'))
+           / COUNT(DISTINCT i.customer_id)
+    FROM interactions i WHERE i.started_at >= '2026-01-01' AND i.started_at < '2026-10-03'
+- id: t169
+  cat: multistep
+  q: ما متوسط وقت أول رد بالدقائق في المحادثات المرتبطة بصفقات ناجحة مقارنة بالصفقات الخاسرة؟
+  sql: |
+    SELECT d.stage_semantic, AVG(i.first_response_seconds) / 60.0 FROM interactions i JOIN deals d ON d.deal_id = i.deal_id
+    WHERE NOT i.is_bot_handled AND d.stage_semantic IN ('S', 'F') GROUP BY d.stage_semantic
+- id: t170
+  cat: multistep
+  q: أي وجهة لديها أعلى متوسط ميزانية بالريال؟
+  sql: |
+    SELECT d.canonical_name FROM interaction_analysis ia
+    JOIN interaction_destinations x ON x.analysis_id = ia.analysis_id AND x.role = 'destination'
+    JOIN destinations d ON d.destination_id = x.destination_id
+    WHERE ia.budget_currency = 'SAR' GROUP BY d.canonical_name ORDER BY AVG(ia.budget_amount) DESC LIMIT 1
+- id: t171
+  cat: multistep
+  q: كم محادثة طلب فيها العميل إسطنبول وطرابزون معًا؟
+  sql: |
+    SELECT COUNT(*) FROM interaction_analysis ia
+    WHERE EXISTS (SELECT 1 FROM interaction_destinations x JOIN destinations d ON d.destination_id = x.destination_id
+                  WHERE x.analysis_id = ia.analysis_id AND x.role = 'destination' AND d.canonical_name = 'Istanbul')
+      AND EXISTS (SELECT 1 FROM interaction_destinations x JOIN destinations d ON d.destination_id = x.destination_id
+                  WHERE x.analysis_id = ia.analysis_id AND x.role = 'destination' AND d.canonical_name = 'Trabzon')
+- id: t172
+  cat: multistep
+  q: من الموظف صاحب أعلى مبيعات بين الموظفين الذين يزيد متوسط تقييم جودتهم عن 75؟
+  sql: |
+    WITH q AS (
+      SELECT e.agent_id FROM agent_evaluations e JOIN agents a ON a.agent_id = e.agent_id
+      WHERE e.contract_status = 'ok' AND e.gradeable AND e.final_score IS NOT NULL AND NOT a.is_bot
+      GROUP BY e.agent_id HAVING AVG(e.final_score) > 75)
+    SELECT a.full_name FROM deals d JOIN agents a ON a.agent_id = d.agent_id
+    WHERE d.stage_semantic = 'S' AND d.agent_id IN (SELECT agent_id FROM q)
+    GROUP BY a.full_name ORDER BY SUM(d.amount) DESC LIMIT 1
+- id: t173
+  cat: multistep
+  q: اعرض لكل موظف نسبة الالتزام بالمتابعة ومتوسط تقييم جودته.
+  sql: |
+    WITH f AS (
+      SELECT f.agent_id, 100.0 * COUNT(*) FILTER (WHERE f.status = 'fulfilled') / COUNT(*) FILTER (WHERE f.status IN ('fulfilled', 'late', 'missed')) AS kept
+      FROM follow_ups f GROUP BY f.agent_id),
+    q AS (
+      SELECT e.agent_id, AVG(e.final_score) AS score FROM agent_evaluations e
+      WHERE e.contract_status = 'ok' AND e.gradeable AND e.final_score IS NOT NULL GROUP BY e.agent_id)
+    SELECT a.full_name, f.kept, q.score FROM agents a JOIN f ON f.agent_id = a.agent_id JOIN q ON q.agent_id = a.agent_id
+    WHERE NOT a.is_bot
+- id: t174
+  cat: multistep
+  q: كم عميلًا لديه صفقة مفتوحة ولم نتواصل معه منذ أكثر من 30 يومًا؟
+  sql: |
+    SELECT COUNT(DISTINCT d.customer_id) FROM deals d JOIN customers c ON c.customer_id = d.customer_id
+    WHERE d.stage_semantic = 'P' AND c.last_seen_at < '2026-09-02'
+- id: t175
+  cat: multistep
+  q: في أي شهر من هذا العام حققنا أعلى مبيعات؟
+  sql: |
+    SELECT date_trunc('month', d.close_date)::date FROM deals d
+    WHERE d.stage_semantic = 'S' AND d.close_date BETWEEN '2026-01-01' AND '2026-10-02'
+    GROUP BY 1 ORDER BY SUM(d.amount) DESC LIMIT 1
+- id: t176
+  cat: multistep
+  q: كم الفرق بين مبيعات صيف 2026 ومبيعات رمضان؟
+  sql: |
+    SELECT SUM(d.amount) FILTER (WHERE d.close_date BETWEEN '2026-06-01' AND '2026-08-31')
+         - SUM(d.amount) FILTER (WHERE d.close_date BETWEEN '2026-02-18' AND '2026-03-19')
+    FROM deals d WHERE d.stage_semantic = 'S'
+- id: t177
+  cat: multistep
+  q: كم عميلًا جديدًا هذا العام كسبنا معه صفقة خلال أول 30 يومًا من أول تواصل له؟
+  sql: |
+    SELECT COUNT(DISTINCT c.customer_id) FROM customers c JOIN deals d ON d.customer_id = c.customer_id
+    WHERE c.first_seen_at >= '2026-01-01' AND c.first_seen_at < '2026-10-03'
+      AND d.stage_semantic = 'S' AND d.close_date <= (c.first_seen_at::date + 30)
+- id: t178
+  cat: multistep
+  q: ما متوسط عدد المحادثات المرتبطة بكل صفقة ناجحة؟
+  sql: |
+    SELECT AVG(n) FROM (SELECT d.deal_id, COUNT(i.interaction_id) AS n FROM deals d
+      JOIN interactions i ON i.deal_id = d.deal_id WHERE d.stage_semantic = 'S' GROUP BY d.deal_id) t
+- id: t179
+  cat: multistep
+  q: أي قناة حققت أعلى مبيعات مقابل كل محادثة هذا العام؟
+  sql: |
+    WITH r AS (SELECT d.source_channel AS ch, SUM(d.amount) AS rev FROM deals d
+               WHERE d.stage_semantic = 'S' AND d.close_date BETWEEN '2026-01-01' AND '2026-10-02' GROUP BY 1),
+         n AS (SELECT i.channel AS ch, COUNT(*) AS conv FROM interactions i
+               WHERE i.started_at >= '2026-01-01' AND i.started_at < '2026-10-03' GROUP BY 1)
+    SELECT r.ch FROM r JOIN n ON n.ch = r.ch ORDER BY r.rev / n.conv DESC LIMIT 1
+- id: t180
+  cat: multistep
+  q: كم صفقة ناجحة فازت بها سارة القحطاني من عملاء تواصلوا عبر إنستغرام هذا العام؟
+  sql: |
+    SELECT COUNT(*) FROM deals d JOIN agents a ON a.agent_id = d.agent_id
+    WHERE d.stage_semantic = 'S' AND a.full_name = 'سارة القحطاني' AND d.source_channel = 'instagram'
+      AND d.close_date BETWEEN '2026-01-01' AND '2026-10-02'
+
+# ============================================================== ambiguous: must ask
+- id: t181
+  cat: ambiguous
+  q: مين أحسن موظف؟
+  expect: clarify
+- id: t182
+  cat: ambiguous
+  q: كم تقييم محمد الشهر اللي فات؟
+  expect: clarify
+- id: t183
+  cat: ambiguous
+  q: عطني تقرير
+  expect: clarify
+- id: t184
+  cat: ambiguous
+  q: كيف الوضع عندنا؟
+  expect: clarify
+- id: t185
+  cat: ambiguous
+  q: كم مبيعات محمد هالسنة؟
+  expect: clarify
+- id: t186
+  cat: ambiguous
+  q: كم عدد الحجوزات في الموسم؟
+  expect: clarify
+- id: t187
+  cat: ambiguous
+  q: من أفضل موظف في الشهر الماضي؟
+  expect: clarify
+- id: t188
+  cat: ambiguous
+  q: قارن الأداء
+  expect: clarify
+- id: t189
+  cat: ambiguous
+  q: كيف الأرقام؟
+  expect: clarify
+- id: t190
+  cat: ambiguous
+  q: كم عند أحمد؟
+  expect: clarify
+
+# ============================================================== out of scope: must decline
+- id: t191
+  cat: oos
+  q: وش رايك بالطقس بكرة في الرياض؟
+  expect: refuse
+- id: t192
+  cat: oos
+  q: احجز لي تذكرة لدبي الأسبوع الجاي
+  expect: refuse
+- id: t193
+  cat: oos
+  q: اكتب لي إيميل أعتذر فيه للعميل عن التأخير
+  expect: refuse
+- id: t194
+  cat: oos
+  q: ما عاصمة فرنسا؟
+  expect: refuse
+- id: t195
+  cat: oos
+  q: امسح كل الصفقات الخاسرة
+  expect: refuse
+- id: t196
+  cat: oos
+  q: كم سعر الدولار اليوم؟
+  expect: refuse
+- id: t197
+  cat: oos
+  q: عدّل مبلغ الصفقة رقم 40012 إلى 5000
+  expect: refuse
+- id: t198
+  cat: oos
+  q: ترجم لي هالجملة للإنجليزي، أهلا وسهلا
+  expect: refuse
+- id: t199
+  cat: oos
+  q: وش أحسن فندق في إسطنبول؟
+  expect: refuse
+- id: t200
+  cat: oos
+  q: كم راتب سارة القحطاني؟
+  expect: refuse

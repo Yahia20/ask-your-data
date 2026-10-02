@@ -1,0 +1,363 @@
+# The semantic layer: every business definition the assistant is allowed to use.
+#
+# The model never writes SQL for a question this file can express. It picks
+# metrics, dimensions, filters and a period by name; src/ask_data/semantic.py
+# turns that choice into Postgres SQL. Changing what "revenue" means is a
+# one-line edit here, and every answer changes with it.
+#
+# To point this at another warehouse, edit `entities` (table names, joins,
+# column expressions). Metric and dimension names are what the model sees and
+# can stay the same.
+
+dialect: postgres
+
+# Plain-language rules. Shown to the model in every prompt, and the contract
+# the test set's expected answers are written against.
+rules:
+  - "Agent quality uses usable evaluations only: contract_status = 'ok' AND gradeable AND final_score IS NOT NULL, and never the bot (agents.is_bot = false). Evaluations are dated by the conversation's interactions.started_at."
+  - "Sales / revenue / income (مبيعات، إيرادات، دخل) = SUM(deals.amount) of won deals (stage_semantic = 'S'), dated by deals.close_date. All deal amounts are in SAR."
+  - "Won and lost deals are dated by close_date; deals created/opened are dated by created_at_src. Win rate = won / (won + lost), by close_date. Open deals are stage_semantic = 'P'."
+  - "Response time = interactions.first_response_seconds over conversations handled by people (is_bot_handled = false), reported in minutes."
+  - "Customer budgets (interaction_analysis.budget_amount) count SAR only (budget_currency = 'SAR') unless another currency is asked for."
+  - "Destinations come from interaction_destinations with role = 'destination', joined to destinations.canonical_name. One conversation can name several destinations; count distinct conversations."
+  - "Nationality and city mean the customer's (customers.nationality, customers.residence_city)."
+  - "New customers = customers.first_seen_at in the period."
+  - "Follow-up promises are dated by promised_at. Kept rate = fulfilled / (fulfilled + late + missed). Broken = late or missed. Overdue = status 'open' and due_at before now."
+  - "A conversation, chat and interaction (محادثة، شات، تواصل) are the same thing: one row in interactions."
+  - "Leads / potential customers (عملاء محتملين، ليدز) = conversations, classified by interaction_analysis.lead_temp (hot/warm/cold)."
+  - "A week starts on Sunday. 'Last N months' means the N full calendar months before the current one."
+
+# ---------------------------------------------------------------------------
+# Entities: what can be counted, and how its tables join.
+entities:
+  conversations:
+    from: interactions i
+    time: i.started_at
+    joins:
+      a: LEFT JOIN agents a ON a.agent_id = i.agent_id
+      c: LEFT JOIN customers c ON c.customer_id = i.customer_id
+      ia: LEFT JOIN interaction_analysis ia ON ia.interaction_id = i.interaction_id
+      legs: >-
+        LEFT JOIN interaction_destinations idst ON idst.analysis_id = ia.analysis_id AND idst.role = 'destination'
+        LEFT JOIN destinations dd ON dd.destination_id = idst.destination_id
+    dimensions:
+      agent: {sql: a.full_name, joins: [a]}
+      team: {sql: a.team, joins: [a]}
+      channel: {sql: i.channel}
+      handled_by: {sql: i.handled_by}
+      after_hours: {sql: i.is_after_hours}
+      nationality: {sql: c.nationality, joins: [c]}
+      city: {sql: c.residence_city, joins: [c]}
+      service: {sql: ia.service, joins: [ia]}
+      lead_temp: {sql: ia.lead_temp, joins: [ia]}
+      buying_stage: {sql: ia.buying_stage, joins: [ia]}
+      intent: {sql: ia.intent, joins: [ia]}
+      destination: {sql: dd.canonical_name, joins: [ia, legs], fanout: true, analysis_key: ia.analysis_id}
+
+  evaluations:
+    from: agent_evaluations e
+    time: i.started_at
+    where: "e.contract_status = 'ok' AND e.gradeable AND e.final_score IS NOT NULL AND a.is_bot = false"
+    required: [i, a]
+    joins:
+      i: JOIN interactions i ON i.interaction_id = e.interaction_id
+      a: JOIN agents a ON a.agent_id = e.agent_id
+      c: LEFT JOIN customers c ON c.customer_id = i.customer_id
+      ia: LEFT JOIN interaction_analysis ia ON ia.interaction_id = i.interaction_id
+      legs: >-
+        LEFT JOIN interaction_destinations idst ON idst.analysis_id = ia.analysis_id AND idst.role = 'destination'
+        LEFT JOIN destinations dd ON dd.destination_id = idst.destination_id
+    dimensions:
+      agent: {sql: a.full_name}
+      team: {sql: a.team}
+      channel: {sql: i.channel}
+      performance_level: {sql: e.performance_level}
+      nationality: {sql: c.nationality, joins: [c]}
+      city: {sql: c.residence_city, joins: [c]}
+      service: {sql: ia.service, joins: [ia]}
+      lead_temp: {sql: ia.lead_temp, joins: [ia]}
+      destination: {sql: dd.canonical_name, joins: [ia, legs], fanout: true, analysis_key: ia.analysis_id}
+
+  deals:
+    from: deals d
+    time: d.created_at_src     # overridden per metric
+    joins:
+      a: LEFT JOIN agents a ON a.agent_id = d.agent_id
+      c: LEFT JOIN customers c ON c.customer_id = d.customer_id
+    dimensions:
+      agent: {sql: a.full_name, joins: [a]}
+      team: {sql: a.team, joins: [a]}
+      channel: {sql: d.source_channel}
+      service: {sql: d.service}
+      lead_temp: {sql: d.lead_temp}
+      deal_status: {sql: "CASE d.stage_semantic WHEN 'S' THEN 'won' WHEN 'F' THEN 'lost' ELSE 'open' END"}
+      nationality: {sql: c.nationality, joins: [c]}
+      city: {sql: c.residence_city, joins: [c]}
+
+  followups:
+    from: follow_ups f
+    time: f.promised_at
+    joins:
+      a: LEFT JOIN agents a ON a.agent_id = f.agent_id
+      c: LEFT JOIN customers c ON c.customer_id = f.customer_id
+    dimensions:
+      agent: {sql: a.full_name, joins: [a]}
+      team: {sql: a.team, joins: [a]}
+      channel: {sql: f.channel}
+      followup_status: {sql: f.status}
+      nationality: {sql: c.nationality, joins: [c]}
+      city: {sql: c.residence_city, joins: [c]}
+
+  customers:
+    from: customers c
+    time: c.first_seen_at
+    joins: {}
+    dimensions:
+      nationality: {sql: c.nationality}
+      city: {sql: c.residence_city}
+      country: {sql: c.residence_country}
+
+# ---------------------------------------------------------------------------
+# Metrics. `time: null` means a snapshot that ignores the period.
+# fanout_safe: false = would double count if grouped by destination.
+metrics:
+  conversations:
+    entity: conversations
+    sql: COUNT(DISTINCT i.interaction_id)
+    format: int
+    label: {ar: عدد المحادثات, en: Conversations}
+    means: number of conversations / chats / leads
+  customers_contacted:
+    entity: conversations
+    sql: COUNT(DISTINCT i.customer_id)
+    format: int
+    label: {ar: عدد العملاء المتواصلين, en: Customers who got in touch}
+    means: distinct customers who had a conversation in the period
+  bot_share:
+    entity: conversations
+    sql: 100.0 * COUNT(DISTINCT i.interaction_id) FILTER (WHERE i.is_bot_handled) / NULLIF(COUNT(DISTINCT i.interaction_id), 0)
+    format: pct
+    label: {ar: نسبة المحادثات اللي خدمها البوت, en: Share handled by the bot}
+    means: percent of conversations handled entirely by the bot
+  after_hours_share:
+    entity: conversations
+    sql: 100.0 * COUNT(DISTINCT i.interaction_id) FILTER (WHERE i.is_after_hours) / NULLIF(COUNT(DISTINCT i.interaction_id), 0)
+    format: pct
+    label: {ar: نسبة المحادثات خارج الدوام, en: After-hours share}
+    means: percent of conversations started outside working hours
+  avg_first_response_min:
+    entity: conversations
+    sql: AVG(i.first_response_seconds) FILTER (WHERE NOT i.is_bot_handled) / 60.0
+    format: minutes
+    fanout_safe: false
+    label: {ar: متوسط وقت أول رد (دقيقة), en: Avg first response (min)}
+    means: average minutes until a person first replied (human-handled conversations only)
+  avg_messages:
+    entity: conversations
+    sql: AVG(i.message_count)
+    format: dec
+    fanout_safe: false
+    label: {ar: متوسط عدد الرسائل, en: Avg messages per conversation}
+    means: average messages per conversation
+  avg_budget_sar:
+    entity: conversations
+    sql: AVG(ia.budget_amount) FILTER (WHERE ia.budget_currency = 'SAR')
+    joins: [ia]
+    format: sar
+    fanout_safe: false
+    label: {ar: متوسط ميزانية العميل (ريال), en: Avg stated budget (SAR)}
+    means: average budget customers stated, SAR only
+  avg_travelers:
+    entity: conversations
+    sql: AVG(ia.travelers_total)
+    joins: [ia]
+    format: dec
+    fanout_safe: false
+    label: {ar: متوسط عدد المسافرين, en: Avg travellers}
+    means: average number of travellers per request
+
+  avg_score:
+    entity: evaluations
+    sql: AVG(e.final_score)
+    format: score
+    fanout_safe: false
+    label: {ar: متوسط تقييم الجودة, en: Avg quality score}
+    means: average agent quality score (0-100) from usable evaluations
+  evaluated_conversations:
+    entity: evaluations
+    sql: COUNT(DISTINCT e.evaluation_id)
+    format: int
+    label: {ar: عدد المحادثات المقيّمة, en: Evaluated conversations}
+    means: number of usable evaluations
+  excellent_share:
+    entity: evaluations
+    sql: 100.0 * COUNT(DISTINCT e.evaluation_id) FILTER (WHERE e.performance_level = 'Excellent') / NULLIF(COUNT(DISTINCT e.evaluation_id), 0)
+    format: pct
+    label: {ar: نسبة التقييمات الممتازة, en: Share rated Excellent}
+    means: percent of evaluations rated Excellent
+  avg_reception:
+    entity: evaluations
+    sql: AVG(e.m1_reception)
+    format: score
+    fanout_safe: false
+    label: {ar: متوسط درجة الاستقبال, en: Avg reception score}
+    means: rubric module 1, greeting and reception
+  avg_offer:
+    entity: evaluations
+    sql: AVG(e.m2_offer)
+    format: score
+    fanout_safe: false
+    label: {ar: متوسط درجة تقديم العرض, en: Avg offer score}
+    means: rubric module 2, presenting the offer
+  avg_objections:
+    entity: evaluations
+    sql: AVG(e.m3_objections)
+    format: score
+    fanout_safe: false
+    label: {ar: متوسط درجة التعامل مع الاعتراضات, en: Avg objection-handling score}
+    means: rubric module 3, handling objections
+  avg_followup_score:
+    entity: evaluations
+    sql: AVG(e.m4_followup)
+    format: score
+    fanout_safe: false
+    label: {ar: متوسط درجة المتابعة, en: Avg follow-up score}
+    means: rubric module 4, follow-up quality inside the conversation
+  avg_closing:
+    entity: evaluations
+    sql: AVG(e.m5_closing)
+    format: score
+    fanout_safe: false
+    label: {ar: متوسط درجة الإغلاق, en: Avg closing score}
+    means: rubric module 5, closing
+
+  deals_created:
+    entity: deals
+    sql: COUNT(DISTINCT d.deal_id)
+    time: d.created_at_src
+    format: int
+    label: {ar: عدد الصفقات الجديدة, en: Deals created}
+    means: deals opened in the period
+  deals_won:
+    entity: deals
+    sql: COUNT(DISTINCT d.deal_id) FILTER (WHERE d.stage_semantic = 'S')
+    time: d.close_date
+    format: int
+    label: {ar: عدد الصفقات الناجحة, en: Deals won}
+    means: deals won (closed successfully) in the period
+  deals_lost:
+    entity: deals
+    sql: COUNT(DISTINCT d.deal_id) FILTER (WHERE d.stage_semantic = 'F')
+    time: d.close_date
+    format: int
+    label: {ar: عدد الصفقات الخاسرة, en: Deals lost}
+    means: deals lost in the period
+  revenue:
+    entity: deals
+    sql: SUM(d.amount) FILTER (WHERE d.stage_semantic = 'S')
+    time: d.close_date
+    format: sar
+    label: {ar: المبيعات (ريال), en: Sales (SAR)}
+    means: sales / revenue / income = total amount of won deals
+  avg_deal_value:
+    entity: deals
+    sql: AVG(d.amount) FILTER (WHERE d.stage_semantic = 'S')
+    time: d.close_date
+    format: sar
+    label: {ar: متوسط قيمة الصفقة الناجحة (ريال), en: Avg won deal (SAR)}
+    means: average amount of a won deal
+  win_rate:
+    entity: deals
+    sql: 100.0 * COUNT(DISTINCT d.deal_id) FILTER (WHERE d.stage_semantic = 'S') / NULLIF(COUNT(DISTINCT d.deal_id) FILTER (WHERE d.stage_semantic IN ('S', 'F')), 0)
+    time: d.close_date
+    format: pct
+    label: {ar: نسبة إغلاق الصفقات, en: Win rate}
+    means: won / (won + lost) of deals closed in the period
+  open_deals:
+    entity: deals
+    sql: COUNT(DISTINCT d.deal_id) FILTER (WHERE d.stage_semantic = 'P')
+    time: d.created_at_src
+    format: int
+    label: {ar: عدد الصفقات المفتوحة, en: Open deals}
+    means: deals still open (period, if given, filters on when they were created)
+  open_pipeline_value:
+    entity: deals
+    sql: SUM(d.amount) FILTER (WHERE d.stage_semantic = 'P')
+    time: d.created_at_src
+    format: sar
+    label: {ar: قيمة الصفقات المفتوحة (ريال), en: Open pipeline (SAR)}
+    means: total amount of deals still open
+
+  promises:
+    entity: followups
+    sql: COUNT(DISTINCT f.follow_up_id)
+    format: int
+    label: {ar: عدد وعود المتابعة, en: Follow-up promises}
+    means: follow-up promises agents made
+  kept_rate:
+    entity: followups
+    sql: 100.0 * COUNT(DISTINCT f.follow_up_id) FILTER (WHERE f.status = 'fulfilled') / NULLIF(COUNT(DISTINCT f.follow_up_id) FILTER (WHERE f.status IN ('fulfilled', 'late', 'missed')), 0)
+    format: pct
+    label: {ar: نسبة الالتزام بالمتابعة, en: Promises kept on time}
+    means: fulfilled / (fulfilled + late + missed)
+  broken_promises:
+    entity: followups
+    sql: COUNT(DISTINCT f.follow_up_id) FILTER (WHERE f.status IN ('late', 'missed'))
+    format: int
+    label: {ar: عدد المتابعات المتأخرة أو الفائتة, en: Broken promises}
+    means: promises kept late or missed
+  overdue_followups:
+    entity: followups
+    sql: COUNT(DISTINCT f.follow_up_id) FILTER (WHERE f.status = 'open' AND f.due_at < {now})
+    time: null
+    format: int
+    label: {ar: المتابعات المتأخرة حاليًا, en: Overdue right now}
+    means: promises still open whose due time has passed (a snapshot, ignores the period)
+  avg_hours_to_fulfil:
+    entity: followups
+    sql: AVG(f.hours_to_fulfil) FILTER (WHERE f.status = 'fulfilled')
+    format: dec
+    label: {ar: متوسط ساعات تنفيذ المتابعة, en: Avg hours to fulfil}
+    means: average hours to keep a promise (fulfilled ones only)
+
+  new_customers:
+    entity: customers
+    sql: COUNT(DISTINCT c.customer_id)
+    format: int
+    label: {ar: عدد العملاء الجدد, en: New customers}
+    means: customers first seen in the period
+  customers_total:
+    entity: customers
+    sql: COUNT(DISTINCT c.customer_id)
+    time: null
+    format: int
+    label: {ar: إجمالي العملاء, en: All customers}
+    means: every customer on record (ignores the period)
+
+# ---------------------------------------------------------------------------
+# Dimensions: labels and where their allowed values come from.
+dimensions:
+  agent: {label: {ar: الموظف, en: Agent}, values_sql: "SELECT full_name FROM agents"}
+  team: {label: {ar: الفريق, en: Team}, values: [sales, support, bot]}
+  channel: {label: {ar: القناة, en: Channel}, values: [whatsapp, instagram, facebook, telegram, webchat]}
+  handled_by: {label: {ar: من خدم المحادثة, en: Handled by}, values: [agent, bot]}
+  after_hours: {label: {ar: خارج الدوام, en: After hours}, values: [true, false]}
+  nationality: {label: {ar: الجنسية, en: Nationality}, values_sql: "SELECT DISTINCT nationality FROM customers WHERE nationality IS NOT NULL"}
+  city: {label: {ar: المدينة, en: City}, values_sql: "SELECT DISTINCT residence_city FROM customers WHERE residence_city IS NOT NULL"}
+  country: {label: {ar: الدولة, en: Country}, values_sql: "SELECT DISTINCT residence_country FROM customers WHERE residence_country IS NOT NULL"}
+  service: {label: {ar: الخدمة, en: Service}, values: [package, flight, hotel, umrah, visa, insurance, transfer, cruise, other, unknown]}
+  lead_temp: {label: {ar: حرارة العميل, en: Lead temperature}, values: [hot, warm, cold, unknown]}
+  buying_stage: {label: {ar: مرحلة الشراء, en: Buying stage}, values: [awareness, consideration, decision, purchased, lost, unknown]}
+  intent: {label: {ar: سبب التواصل, en: Intent}, values: [price_inquiry, booking_request, availability_check, modification, cancellation, complaint, visa_inquiry, general_info]}
+  destination: {label: {ar: الوجهة, en: Destination}, values_sql: "SELECT canonical_name FROM destinations", aliases_sql: "SELECT d.canonical_name, a.alias FROM destination_aliases a JOIN destinations d USING (destination_id)"}
+  performance_level: {label: {ar: مستوى الأداء, en: Performance level}, values: [Excellent, Good, Average, Below Average]}
+  deal_status: {label: {ar: حالة الصفقة, en: Deal status}, values: [won, lost, open]}
+  followup_status: {label: {ar: حالة المتابعة, en: Follow-up status}, values: [open, fulfilled, late, missed, cancelled]}
+
+# Named periods managers actually say. Inclusive dates.
+named_periods:
+  ramadan_2026: {start: 2026-02-18, end: 2026-03-19, label: {ar: رمضان 2026, en: Ramadan 2026}}
+  eid_al_fitr_2026: {start: 2026-03-20, end: 2026-03-23, label: {ar: عيد الفطر 2026, en: Eid al-Fitr 2026}}
+  eid_al_adha_2026: {start: 2026-05-26, end: 2026-05-29, label: {ar: عيد الأضحى 2026, en: Eid al-Adha 2026}}
+  summer_2026: {start: 2026-06-01, end: 2026-08-31, label: {ar: صيف 2026, en: Summer 2026}}
+  national_day_2026: {start: 2026-09-23, end: 2026-09-23, label: {ar: اليوم الوطني 2026, en: National Day 2026}}

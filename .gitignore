@@ -1,0 +1,16 @@
+.env
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+
+# LLM response cache and spend ledger - local only
+.cache/
+# question log written by the app
+logs/
+*.duckdb.wal
+data/demo.duckdb
