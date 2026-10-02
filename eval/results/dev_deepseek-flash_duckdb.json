@@ -1,0 +1,185 @@
+{
+ "summary": {
+  "accuracy_trusted_answers": 100.0,
+  "trusted_answers": 2,
+  "accuracy_all_answers": 100.0,
+  "coverage": 100.0,
+  "correct_of_answerable": 100.0,
+  "abstained": 0,
+  "clarify_correct": 100.0,
+  "refuse_correct": null,
+  "by_tier": {
+   "semantic": "2/2 (100.0%)",
+   "voted": "1/1 (100.0%)"
+  },
+  "by_category": {
+   "msa": "1/1 (100.0%)",
+   "saudi": "1/1 (100.0%)",
+   "multistep": "1/1 (100.0%)",
+   "ambiguous": "1/1 (100.0%)",
+   "oos": "0/0 (None%)"
+  },
+  "median_seconds": 5.0,
+  "p90_seconds": 7.58,
+  "avg_cost_usd_per_question": 0.006503,
+  "model": "deepseek-flash",
+  "set": "dev",
+  "questions": 4,
+  "wall_seconds": 7.6,
+  "llm_spend_usd": 0.0118,
+  "warehouse": "duckdb"
+ },
+ "rows": [
+  {
+   "id": "d01",
+   "cat": "msa",
+   "q": "كم محادثة وصلتنا عبر فيسبوك في يوليو؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT COUNT(DISTINCT i.interaction_id) AS conversations\nFROM interactions i\nWHERE i.channel IN ('facebook')\n  AND i.started_at >= '2026-07-01' AND i.started_at < '2026-08-01'"
+   ],
+   "rows": [
+    [
+     "146"
+    ]
+   ],
+   "text": "عدد المحادثات — يوليو 2026 (2026-07-01 → 2026-07-31): **146**",
+   "seconds": 5.0,
+   "cost_usd": 0.006588
+  },
+  {
+   "id": "d24",
+   "cat": "saudi",
+   "q": "عطني نسبة القفل لكل موظف هالسنة",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT a.full_name AS agent, 100.0 * COUNT(DISTINCT d.deal_id) FILTER (WHERE d.stage_semantic = 'S') / NULLIF(COUNT(DISTINCT d.deal_id) FILTER (WHERE d.stage_semantic IN ('S', 'F')), 0) AS win_rate\nFROM deals d\nLEFT JOIN agents a ON a.agent_id = d.agent_id\nWHERE d.close_date >= '2026-01-01' AND d.close_date < '2026-10-03'\nGROUP BY 1\nORDER BY win_rate DESC NULLS LAST"
+   ],
+   "rows": [
+    [
+     "ريم الزهراني",
+     "30.211480362537763"
+    ],
+    [
+     "سارة القحطاني",
+     "27.741935483870968"
+    ],
+    [
+     "أحمد الغامدي",
+     "26.984126984126984"
+    ],
+    [
+     "هبة عبدالعزيز",
+     "26.89873417721519"
+    ],
+    [
+     "فهد الحربي",
+     "26.148409893992934"
+    ],
+    [
+     "محمد العتيبي",
+     "25.757575757575758"
+    ],
+    [
+     "خالد السبيعي",
+     "23.49397590361446"
+    ],
+    [
+     "محمد الشهري",
+     "20.754716981132077"
+    ]
+   ],
+   "text": "نسبة إغلاق الصفقات (win rate) لكل موظف في سنة 2026 — هذا العام (2026-01-01 → 2026-10-02)",
+   "seconds": 4.85,
+   "cost_usd": 0.006268
+  },
+  {
+   "id": "d46",
+   "cat": "multistep",
+   "q": "من هم الموظفون الذين مبيعاتهم في الربع الثالث أعلى من الربع الثاني؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "voted",
+   "votes": "3/3",
+   "trace": [
+    "sql",
+    "sql"
+   ],
+   "sql": [
+    "SELECT\n  a.full_name AS agent_name,\n  COALESCE(SUM(CASE WHEN d.close_date >= '2026-04-01' AND d.close_date < '2026-07-01'\n                    THEN d.amount END), 0) AS q2_sales,\n  COALESCE(SUM(CASE WHEN d.close_date >= '2026-07-01' AND d.close_date < '2026-10-01'\n                    THEN d.amount END), 0) AS q3_sales\nFROM agents a\nJOIN deals d\n  ON d.agent_id = a.agent_id\nWHERE a.is_bot = false\n  AND d.stage_semantic = 'S'\n  AND d.close_date >= '2026-04-01'\n  AND d.close_date <  '2026-10-01'\nGROUP BY a.agent_id, a.full_name\nHAVING COALESCE(SUM(CASE WHEN d.close_date >= '2026-07-01' AND d.close_date < '2026-10-01'\n                         THEN d.amount END), 0)\n     > COALESCE(SUM(CASE WHEN d.close_date >= '2026-04-01' AND d.close_date < '2026-07-01'\n                         THEN d.amount END), 0)\nORDER BY q3_sales DESC"
+   ],
+   "rows": [
+    [
+     "أحمد الغامدي",
+     "114460.00",
+     "433970.00"
+    ],
+    [
+     "هبة عبدالعزيز",
+     "184360.00",
+     "426130.00"
+    ],
+    [
+     "سارة القحطاني",
+     "242530.00",
+     "341190.00"
+    ],
+    [
+     "ريم الزهراني",
+     "179810.00",
+     "336210.00"
+    ],
+    [
+     "محمد العتيبي",
+     "167230.00",
+     "309340.00"
+    ],
+    [
+     "محمد الشهري",
+     "204250.00",
+     "269930.00"
+    ]
+   ],
+   "text": "الموظفون الذين مبيعاتهم (إجمالي قيمة الصفقات الناجحة) في الربع الثالث 2026 أعلى من مبيعاتهم في الربع الثاني 2026",
+   "seconds": 7.58,
+   "cost_usd": 0.011783
+  },
+  {
+   "id": "d52",
+   "cat": "ambiguous",
+   "q": "كم عند محمد صفقات؟",
+   "expect": "clarify",
+   "verdict": "correct",
+   "note": "",
+   "status": "clarify",
+   "tier": null,
+   "votes": null,
+   "trace": [
+    "clarify"
+   ],
+   "sql": [],
+   "rows": [],
+   "text": "فيه أكثر من موظف اسمه محمد، أي واحد تقصد؟",
+   "seconds": 3.21,
+   "cost_usd": 0.001371
+  }
+ ]
+}

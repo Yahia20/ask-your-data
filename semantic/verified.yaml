@@ -1,0 +1,118 @@
+# Verified analyses: reviewed SQL for common questions the semantic layer
+# can't express (per-hour patterns, customer-level counts, scorecards).
+#
+# Placeholders, filled by code, never by the model:
+#   {period:<column>}   -> "<column> >= 'start' AND <column> < 'end+1'", or "true" for all time
+#   {days_ago:<n>}      -> the literal date n days before today
+#   {limit}             -> "LIMIT n" when the question asks for a top N, else nothing
+
+- id: busiest_hours
+  title: {ar: أكثر ساعات اليوم ازدحامًا بالمحادثات, en: Busiest hours of the day}
+  means: conversations per hour of the day (0-23, Riyadh time), busiest first
+  params: [period, limit]
+  sql: |
+    SELECT EXTRACT(HOUR FROM i.started_at)::int AS hour_of_day, COUNT(*) AS conversations
+    FROM interactions i
+    WHERE {period:i.started_at}
+    GROUP BY 1 ORDER BY 2 DESC {limit}
+
+- id: busiest_weekdays
+  title: {ar: أكثر أيام الأسبوع ازدحامًا, en: Busiest days of the week}
+  means: conversations per day of the week, busiest first
+  params: [period, limit]
+  sql: |
+    SELECT CASE EXTRACT(DOW FROM i.started_at)::int WHEN 0 THEN 'Sunday' WHEN 1 THEN 'Monday' WHEN 2 THEN 'Tuesday'
+             WHEN 3 THEN 'Wednesday' WHEN 4 THEN 'Thursday' WHEN 5 THEN 'Friday' ELSE 'Saturday' END AS weekday,
+           COUNT(*) AS conversations
+    FROM interactions i
+    WHERE {period:i.started_at}
+    GROUP BY 1 ORDER BY 2 DESC {limit}
+
+- id: days_to_close
+  title: {ar: متوسط الأيام لإغلاق الصفقة الناجحة, en: Average days to win a deal}
+  means: average days from a deal being opened to being won
+  params: [period]
+  sql: |
+    SELECT AVG(d.close_date - d.created_at_src::date) AS avg_days_to_close, COUNT(*) AS won_deals
+    FROM deals d
+    WHERE d.stage_semantic = 'S' AND {period:d.close_date}
+
+- id: inactive_customers
+  title: {ar: العملاء المنقطعون عن التواصل, en: Customers gone quiet}
+  means: number of customers whose last contact was more than N days ago (default 90)
+  params: [days]
+  sql: |
+    SELECT COUNT(*) AS customers
+    FROM customers c
+    WHERE c.last_seen_at < '{days_ago:days}'
+
+- id: returning_customers
+  title: {ar: العملاء الذين تواصلوا أكثر من مرة, en: Customers who came back}
+  means: number of customers with more than one conversation (in the period, if given)
+  params: [period]
+  sql: |
+    SELECT COUNT(*) AS customers FROM (
+      SELECT i.customer_id FROM interactions i
+      WHERE {period:i.started_at}
+      GROUP BY i.customer_id HAVING COUNT(*) > 1) t
+
+- id: repeat_buyers
+  title: {ar: العملاء الذين اشتروا أكثر من مرة, en: Repeat buyers}
+  means: number of customers with more than one won deal (closed in the period, if given)
+  params: [period]
+  sql: |
+    SELECT COUNT(*) AS customers FROM (
+      SELECT d.customer_id FROM deals d
+      WHERE d.stage_semantic = 'S' AND {period:d.close_date}
+      GROUP BY d.customer_id HAVING COUNT(*) > 1) t
+
+- id: top_customers_by_sales
+  title: {ar: أعلى العملاء من حيث المشتريات, en: Top customers by sales}
+  means: customers ranked by the total amount of their won deals
+  params: [period, limit]
+  sql: |
+    SELECT c.display_name AS customer, c.primary_phone_e164 AS phone, SUM(d.amount) AS sales_sar, COUNT(*) AS won_deals
+    FROM deals d JOIN customers c ON c.customer_id = d.customer_id
+    WHERE d.stage_semantic = 'S' AND {period:d.close_date}
+    GROUP BY c.customer_id, c.display_name, c.primary_phone_e164
+    ORDER BY sales_sar DESC {limit}
+
+- id: conversations_per_won_deal
+  title: {ar: متوسط عدد المحادثات لكل صفقة ناجحة, en: Conversations per won deal}
+  means: average number of conversations linked to each won deal
+  params: [period]
+  sql: |
+    SELECT AVG(n) AS avg_conversations FROM (
+      SELECT d.deal_id, COUNT(i.interaction_id) AS n
+      FROM deals d JOIN interactions i ON i.deal_id = d.deal_id
+      WHERE d.stage_semantic = 'S' AND {period:d.close_date}
+      GROUP BY d.deal_id) t
+
+- id: agent_scorecard
+  title: {ar: بطاقة أداء الموظفين, en: Agent scorecard}
+  means: one row per agent with quality score, conversations evaluated, sales, win rate and follow-up kept rate
+  params: [period]
+  sql: |
+    WITH q AS (
+      SELECT e.agent_id, AVG(e.final_score) AS avg_score, COUNT(*) AS evaluated
+      FROM agent_evaluations e JOIN interactions i ON i.interaction_id = e.interaction_id
+      WHERE e.contract_status = 'ok' AND e.gradeable AND e.final_score IS NOT NULL AND {period:i.started_at}
+      GROUP BY e.agent_id),
+    s AS (
+      SELECT d.agent_id,
+             SUM(d.amount) FILTER (WHERE d.stage_semantic = 'S') AS sales_sar,
+             100.0 * COUNT(*) FILTER (WHERE d.stage_semantic = 'S') / NULLIF(COUNT(*) FILTER (WHERE d.stage_semantic IN ('S', 'F')), 0) AS win_rate
+      FROM deals d WHERE {period:d.close_date}
+      GROUP BY d.agent_id),
+    f AS (
+      SELECT f.agent_id,
+             100.0 * COUNT(*) FILTER (WHERE f.status = 'fulfilled') / NULLIF(COUNT(*) FILTER (WHERE f.status IN ('fulfilled', 'late', 'missed')), 0) AS kept_rate
+      FROM follow_ups f WHERE {period:f.promised_at}
+      GROUP BY f.agent_id)
+    SELECT a.full_name AS agent, q.avg_score, q.evaluated, s.sales_sar, s.win_rate, f.kept_rate
+    FROM agents a
+    LEFT JOIN q ON q.agent_id = a.agent_id
+    LEFT JOIN s ON s.agent_id = a.agent_id
+    LEFT JOIN f ON f.agent_id = a.agent_id
+    WHERE NOT a.is_bot AND (q.agent_id IS NOT NULL OR s.agent_id IS NOT NULL OR f.agent_id IS NOT NULL)
+    ORDER BY q.avg_score DESC NULLS LAST
