@@ -7,6 +7,8 @@
 --
 -- Written in the subset of SQL that both Postgres and DuckDB accept. Postgres
 -- enums are plain text here; their allowed values live in semantic/model.yaml.
+-- On the live database channel, handled_by, service, buying_stage and lead_temp
+-- are ENUM types: cast them with ::text before comparing with another table's text.
 
 CREATE TABLE agents (
   agent_id        uuid PRIMARY KEY,

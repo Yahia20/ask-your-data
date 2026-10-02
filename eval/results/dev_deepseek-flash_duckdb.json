@@ -1,7 +1,7 @@
 {
  "summary": {
   "accuracy_trusted_answers": 100.0,
-  "trusted_answers": 46,
+  "trusted_answers": 45,
   "accuracy_all_answers": 100.0,
   "coverage": 100.0,
   "correct_of_answerable": 100.0,
@@ -9,8 +9,8 @@
   "clarify_correct": 100.0,
   "refuse_correct": 100.0,
   "by_tier": {
-   "semantic": "46/46 (100.0%)",
-   "voted": "4/4 (100.0%)"
+   "semantic": "45/45 (100.0%)",
+   "voted": "5/5 (100.0%)"
   },
   "by_category": {
    "msa": "20/20 (100.0%)",
@@ -20,14 +20,14 @@
    "ambiguous": "5/5 (100.0%)",
    "oos": "5/5 (100.0%)"
   },
-  "median_seconds": 2.45,
-  "p90_seconds": 7.05,
-  "avg_cost_usd_per_question": 0.001852,
+  "median_seconds": 1.92,
+  "p90_seconds": 4.64,
+  "avg_cost_usd_per_question": 0.002172,
   "model": "deepseek-flash",
   "set": "dev",
   "questions": 60,
-  "wall_seconds": 53.8,
-  "llm_spend_usd": 0.0223,
+  "wall_seconds": 28.6,
+  "llm_spend_usd": 0.023,
   "warehouse": "duckdb"
  },
  "rows": [
@@ -45,7 +45,7 @@
     "semantic"
    ],
    "sql": [
-    "SELECT COUNT(DISTINCT i.interaction_id) AS conversations\nFROM interactions i\nWHERE i.channel IN ('facebook')\n  AND i.started_at >= '2026-07-01' AND i.started_at < '2026-08-01'"
+    "SELECT COUNT(DISTINCT i.interaction_id) AS conversations\nFROM interactions i\nWHERE i.channel::text IN ('facebook')\n  AND i.started_at >= '2026-07-01' AND i.started_at < '2026-08-01'"
    ],
    "rows": [
     [
@@ -53,8 +53,8 @@
     ]
    ],
    "text": "عدد المحادثات — يوليو 2026 (2026-07-01 → 2026-07-31): **146**",
-   "seconds": 2.66,
-   "cost_usd": 0.002606
+   "seconds": 2.88,
+   "cost_usd": 0.0033
   },
   {
    "id": "d02",
@@ -70,7 +70,7 @@
     "semantic"
    ],
    "sql": [
-    "SELECT AVG(i.first_response_seconds) FILTER (WHERE NOT i.is_bot_handled) / 60.0 AS avg_first_response_min\nFROM interactions i\nWHERE i.channel IN ('telegram')"
+    "SELECT AVG(i.first_response_seconds) FILTER (WHERE NOT i.is_bot_handled) / 60.0 AS avg_first_response_min\nFROM interactions i\nWHERE i.channel::text IN ('telegram')"
    ],
    "rows": [
     [
@@ -78,8 +78,8 @@
     ]
    ],
    "text": "متوسط وقت أول رد (دقيقة): **11.7 دقيقة**",
-   "seconds": 2.36,
-   "cost_usd": 0.00129
+   "seconds": 2.61,
+   "cost_usd": 0.000634
   },
   {
    "id": "d03",
@@ -119,9 +119,9 @@
      "18450.00"
     ]
    ],
-   "text": "إجمالي المبيعات حسب القناة في الربع الثاني 2026 — الربع 2 من 2026 (2026-04-01 → 2026-06-30)",
-   "seconds": 2.39,
-   "cost_usd": 0.00195
+   "text": "المبيعات (إجمالي مبلغ الصفقات الناجحة) حسب القناة في الربع الثاني 2026 — الربع 2 من 2026 (2026-04-01 → 2026-06-30)",
+   "seconds": 2.69,
+   "cost_usd": 0.001967
   },
   {
    "id": "d04",
@@ -146,8 +146,8 @@
     ]
    ],
    "text": "**أحمد الغامدي** — عدد الصفقات الناجحة: 16 — الشهر الماضي (2026-09-01 → 2026-09-30)",
-   "seconds": 2.91,
-   "cost_usd": 0.003294
+   "seconds": 2.75,
+   "cost_usd": 0.002638
   },
   {
    "id": "d05",
@@ -207,9 +207,9 @@
      "60.762770448548814"
     ]
    ],
-   "text": "متوسط درجة تقديم العرض (الوحدة الثانية في التقييم) لكل موظف خلال هذا العام 2026",
-   "seconds": 3.41,
-   "cost_usd": 0.00349
+   "text": "متوسط درجة تقديم العرض (الوحدة الثانية في التقييم) لكل موظف هذا العام 2026",
+   "seconds": 3.28,
+   "cost_usd": 0.003478
   },
   {
    "id": "d06",
@@ -233,8 +233,8 @@
     ]
    ],
    "text": "عدد العملاء الجدد — هذا العام (2026-01-01 → 2026-10-02): **473**",
-   "seconds": 2.26,
-   "cost_usd": 0.000644
+   "seconds": 2.69,
+   "cost_usd": 0.001967
   },
   {
    "id": "d07",
@@ -258,8 +258,8 @@
     ]
    ],
    "text": "نسبة المحادثات خارج الدوام — الشهر الماضي (2026-09-01 → 2026-09-30): **20.7%**",
-   "seconds": 1.87,
-   "cost_usd": 0.002994
+   "seconds": 1.43,
+   "cost_usd": 0.003016
   },
   {
    "id": "d08",
@@ -283,8 +283,8 @@
     ]
    ],
    "text": "عدد المحادثات — الربع 2 من 2026 (2026-04-01 → 2026-06-30): **194**",
-   "seconds": 2.04,
-   "cost_usd": 0.002709
+   "seconds": 1.73,
+   "cost_usd": 0.001888
   },
   {
    "id": "d09",
@@ -336,9 +336,9 @@
      "165730.00"
     ]
    ],
-   "text": "قيمة الصفقات المفتوحة لكل موظف",
-   "seconds": 1.84,
-   "cost_usd": 0.001844
+   "text": "قيمة الصفقات المفتوحة لكل موظف (كل الفترات)",
+   "seconds": 1.9,
+   "cost_usd": 0.002282
   },
   {
    "id": "d10",
@@ -362,8 +362,8 @@
     ]
    ],
    "text": "عدد الصفقات الخاسرة — هذا العام (2026-01-01 → 2026-10-02): **259**",
-   "seconds": 2.45,
-   "cost_usd": 0.001595
+   "seconds": 1.75,
+   "cost_usd": 0.001417
   },
   {
    "id": "d11",
@@ -373,13 +373,14 @@
    "verdict": "correct",
    "note": "",
    "status": "answered",
-   "tier": "semantic",
-   "votes": null,
+   "tier": "voted",
+   "votes": "2/3",
    "trace": [
-    "semantic"
+    "sql",
+    "sql"
    ],
    "sql": [
-    "SELECT a.full_name AS agent, COUNT(DISTINCT e.evaluation_id) AS evaluated_conversations\nFROM agent_evaluations e\nJOIN interactions i ON i.interaction_id = e.interaction_id\nJOIN agents a ON a.agent_id = e.agent_id\nWHERE e.contract_status = 'ok' AND e.gradeable AND e.final_score IS NOT NULL AND a.is_bot = false\n  AND a.full_name IS NOT NULL\n  AND e.performance_level IN ('Excellent')\n  AND i.started_at >= '2026-07-01' AND i.started_at < '2026-10-01'\nGROUP BY 1\nORDER BY evaluated_conversations DESC NULLS LAST"
+    "SELECT a.full_name AS agent_name,\n       COUNT(*) AS excellent_evaluations\nFROM agent_evaluations e\nJOIN interactions i ON i.interaction_id = e.interaction_id\nJOIN agents a ON a.agent_id = e.agent_id\nWHERE a.is_bot = false\n  AND e.contract_status = 'ok'\n  AND e.gradeable\n  AND e.final_score IS NOT NULL\n  AND e.performance_level = 'Excellent'\n  AND i.started_at >= '2026-07-01'\n  AND i.started_at < '2026-10-01'\nGROUP BY a.agent_id, a.full_name\nORDER BY excellent_evaluations DESC, agent_name"
    ],
    "rows": [
     [
@@ -419,9 +420,9 @@
      "13"
     ]
    ],
-   "text": "عدد التقييمات الممتازة لكل موظف في الربع الثالث 2026 — الربع 3 من 2026 (2026-07-01 → 2026-09-30)",
-   "seconds": 3.3,
-   "cost_usd": 0.001457
+   "text": "عدد التقييمات الممتازة لكل موظف في الربع الثالث 2026",
+   "seconds": 6.82,
+   "cost_usd": 0.005654
   },
   {
    "id": "d12",
@@ -461,9 +462,9 @@
      "88"
     ]
    ],
-   "text": "عدد وعود المتابعة لكل قناة خلال هذه السنة (2026) — هذا العام (2026-01-01 → 2026-10-02)",
-   "seconds": 2.81,
-   "cost_usd": 0.001415
+   "text": "عدد وعود المتابعة لكل قناة خلال هذا العام 2026",
+   "seconds": 1.7,
+   "cost_usd": 0.000938
   },
   {
    "id": "d13",
@@ -487,8 +488,8 @@
     ]
    ],
    "text": "متوسط ميزانية العميل (ريال): **8,413 ريال**",
-   "seconds": 1.98,
-   "cost_usd": 0.000738
+   "seconds": 1.78,
+   "cost_usd": 0.001255
   },
   {
    "id": "d14",
@@ -528,9 +529,9 @@
      "140"
     ]
    ],
-   "text": "عدد المحادثات لكل أسبوع في سبتمبر 2026",
-   "seconds": 2.02,
-   "cost_usd": 0.00131
+   "text": "عدد المحادثات أسبوعيًا خلال شهر سبتمبر 2026",
+   "seconds": 1.65,
+   "cost_usd": 0.001227
   },
   {
    "id": "d15",
@@ -557,8 +558,8 @@
     ]
    ],
    "text": "المبيعات (ريال) — يونيو 2026 (2026-06-01 → 2026-06-30): **583,390 ريال** مقابل 484,640 ريال (+20.4%)",
-   "seconds": 2.49,
-   "cost_usd": 0.001355
+   "seconds": 3.1,
+   "cost_usd": 0.001984
   },
   {
    "id": "d16",
@@ -582,8 +583,8 @@
     ]
    ],
    "text": "نسبة الالتزام بالمتابعة: **70.4%**",
-   "seconds": 2.02,
-   "cost_usd": 0.001363
+   "seconds": 2.15,
+   "cost_usd": 0.001219
   },
   {
    "id": "d17",
@@ -607,8 +608,8 @@
     ]
    ],
    "text": "عدد المحادثات — الشهر الماضي (2026-09-01 → 2026-09-30): **63**",
-   "seconds": 1.96,
-   "cost_usd": 0.001703
+   "seconds": 1.66,
+   "cost_usd": 0.000849
   },
   {
    "id": "d18",
@@ -632,8 +633,8 @@
     ]
    ],
    "text": "إجمالي العملاء: **278**",
-   "seconds": 1.83,
-   "cost_usd": 0.000986
+   "seconds": 1.68,
+   "cost_usd": 0.000751
   },
   {
    "id": "d19",
@@ -649,7 +650,7 @@
     "semantic"
    ],
    "sql": [
-    "SELECT AVG(i.message_count) AS avg_messages\nFROM interactions i\nWHERE i.handled_by IN ('bot')"
+    "SELECT AVG(i.message_count) AS avg_messages\nFROM interactions i\nWHERE i.handled_by::text IN ('bot')"
    ],
    "rows": [
     [
@@ -657,8 +658,8 @@
     ]
    ],
    "text": "متوسط عدد الرسائل: **5.6**",
-   "seconds": 1.82,
-   "cost_usd": 0.000981
+   "seconds": 1.77,
+   "cost_usd": 0.00116
   },
   {
    "id": "d20",
@@ -682,8 +683,8 @@
     ]
    ],
    "text": "المبيعات (ريال) — عيد الفطر 2026 (2026-03-20 → 2026-03-23): **125,210 ريال**",
-   "seconds": 1.93,
-   "cost_usd": 0.001143
+   "seconds": 1.51,
+   "cost_usd": 0.001884
   },
   {
    "id": "d21",
@@ -699,7 +700,7 @@
     "semantic"
    ],
    "sql": [
-    "SELECT COUNT(DISTINCT i.interaction_id) AS conversations\nFROM interactions i\nWHERE i.channel IN ('instagram')\n  AND i.started_at >= '2026-09-20' AND i.started_at < '2026-09-27'"
+    "SELECT COUNT(DISTINCT i.interaction_id) AS conversations\nFROM interactions i\nWHERE i.channel::text IN ('instagram')\n  AND i.started_at >= '2026-09-20' AND i.started_at < '2026-09-27'"
    ],
    "rows": [
     [
@@ -707,8 +708,8 @@
     ]
    ],
    "text": "عدد المحادثات — الأسبوع الماضي (2026-09-20 → 2026-09-26): **64**",
-   "seconds": 1.55,
-   "cost_usd": 0.001052
+   "seconds": 1.48,
+   "cost_usd": 0.001834
   },
   {
    "id": "d22",
@@ -724,7 +725,7 @@
     "semantic"
    ],
    "sql": [
-    "SELECT a.full_name AS agent, AVG(i.first_response_seconds) FILTER (WHERE NOT i.is_bot_handled) / 60.0 AS avg_first_response_min\nFROM interactions i\nLEFT JOIN agents a ON a.agent_id = i.agent_id\nWHERE a.full_name IS NOT NULL\n  AND i.started_at >= '2026-09-01' AND i.started_at < '2026-10-01'\nGROUP BY 1\nORDER BY avg_first_response_min DESC NULLS LAST LIMIT 1"
+    "SELECT CASE WHEN NOT a.is_bot THEN a.full_name END AS agent, AVG(i.first_response_seconds) FILTER (WHERE NOT i.is_bot_handled) / 60.0 AS avg_first_response_min\nFROM interactions i\nLEFT JOIN agents a ON a.agent_id = i.agent_id\nWHERE CASE WHEN NOT a.is_bot THEN a.full_name END IS NOT NULL\n  AND i.started_at >= '2026-09-01' AND i.started_at < '2026-10-01'\nGROUP BY 1\nORDER BY avg_first_response_min DESC NULLS LAST LIMIT 1"
    ],
    "rows": [
     [
@@ -733,8 +734,8 @@
     ]
    ],
    "text": "**محمد الشهري** — متوسط وقت أول رد (دقيقة): 24.5 دقيقة — الشهر الماضي (2026-09-01 → 2026-09-30)",
-   "seconds": 2.38,
-   "cost_usd": 0.001075
+   "seconds": 4.89,
+   "cost_usd": 0.005362
   },
   {
    "id": "d23",
@@ -758,8 +759,8 @@
     ]
    ],
    "text": "المبيعات (ريال) — هذا العام (2026-01-01 → 2026-10-02): **3,619,840 ريال**",
-   "seconds": 2.9,
-   "cost_usd": 0.001625
+   "seconds": 2.42,
+   "cost_usd": 0.00346
   },
   {
    "id": "d24",
@@ -811,9 +812,9 @@
      "20.754716981132077"
     ]
    ],
-   "text": "نسبة إغلاق الصفقات (الصفقات الناجحة من إجمالي المغلق) لكل موظف في سنة 2026 — هذا العام (2026-01-01 → 2026-10-02)",
-   "seconds": 5.08,
-   "cost_usd": 0.003014
+   "text": "نسبة إغلاق الصفقات (win rate) لكل موظف هذه السنة 2026 — هذا العام (2026-01-01 → 2026-10-02)",
+   "seconds": 3.64,
+   "cost_usd": 0.003917
   },
   {
    "id": "d25",
@@ -837,8 +838,8 @@
     ]
    ],
    "text": "عدد العملاء الجدد — هذا الأسبوع (2026-09-27 → 2026-10-02): **67**",
-   "seconds": 1.78,
-   "cost_usd": 0.000727
+   "seconds": 1.7,
+   "cost_usd": 0.001948
   },
   {
    "id": "d26",
@@ -862,8 +863,8 @@
     ]
    ],
    "text": "متوسط تقييم الجودة — الشهر الماضي (2026-09-01 → 2026-09-30): **75.4**",
-   "seconds": 2.38,
-   "cost_usd": 0.000935
+   "seconds": 1.71,
+   "cost_usd": 0.001993
   },
   {
    "id": "d27",
@@ -887,8 +888,8 @@
     ]
    ],
    "text": "عدد المحادثات — هذا العام (2026-01-01 → 2026-10-02): **453**",
-   "seconds": 1.68,
-   "cost_usd": 0.000579
+   "seconds": 1.52,
+   "cost_usd": 0.000714
   },
   {
    "id": "d28",
@@ -912,8 +913,8 @@
     ]
    ],
    "text": "عدد الصفقات الناجحة — الشهر الماضي (2026-09-01 → 2026-09-30): **4**",
-   "seconds": 2.88,
-   "cost_usd": 0.001346
+   "seconds": 2.0,
+   "cost_usd": 0.001446
   },
   {
    "id": "d29",
@@ -938,8 +939,8 @@
     ]
    ],
    "text": "**باقات** — عدد المحادثات: 2,280 — صيف 2026 (2026-06-01 → 2026-08-31)",
-   "seconds": 2.56,
-   "cost_usd": 0.001179
+   "seconds": 1.92,
+   "cost_usd": 0.001248
   },
   {
    "id": "d30",
@@ -963,8 +964,8 @@
     ]
    ],
    "text": "عدد وعود المتابعة — هذا العام (2026-01-01 → 2026-10-02): **61**",
-   "seconds": 2.15,
-   "cost_usd": 0.000614
+   "seconds": 2.53,
+   "cost_usd": 0.001782
   },
   {
    "id": "d31",
@@ -1024,9 +1025,9 @@
      "19680.00"
     ]
    ],
-   "text": "إجمالي الإيرادات (المبيعات) لكل شهر من بداية السنة 2026 حتى الآن — هذا العام (2026-01-01 → 2026-10-02)",
-   "seconds": 1.86,
-   "cost_usd": 0.001015
+   "text": "الإيرادات (مبيعات الصفقات الناجحة) لكل شهر من أول السنة 2026 — هذا العام (2026-01-01 → 2026-10-02)",
+   "seconds": 1.69,
+   "cost_usd": 0.001781
   },
   {
    "id": "d32",
@@ -1050,8 +1051,8 @@
     ]
    ],
    "text": "نسبة المحادثات اللي خدمها البوت — هذا العام (2026-01-01 → 2026-10-02): **18.3%**",
-   "seconds": 1.58,
-   "cost_usd": 0.000985
+   "seconds": 1.65,
+   "cost_usd": 0.001445
   },
   {
    "id": "d33",
@@ -1075,8 +1076,8 @@
     ]
    ],
    "text": "عدد العملاء المتواصلين — هذا العام (2026-01-01 → 2026-10-02): **150**",
-   "seconds": 1.73,
-   "cost_usd": 0.001494
+   "seconds": 1.86,
+   "cost_usd": 0.001258
   },
   {
    "id": "d34",
@@ -1100,8 +1101,8 @@
     ]
    ],
    "text": "متوسط قيمة الصفقة الناجحة (ريال): **7,209 ريال**",
-   "seconds": 2.41,
-   "cost_usd": 0.001303
+   "seconds": 2.14,
+   "cost_usd": 0.001473
   },
   {
    "id": "d35",
@@ -1118,16 +1119,16 @@
     "sql"
    ],
    "sql": [
-    "SELECT COUNT(DISTINCT i.interaction_id) AS conversations_with_budget\nFROM interactions i\nJOIN interaction_analysis ia ON ia.interaction_id = i.interaction_id\nWHERE i.started_at >= '2026-09-01'\n  AND i.started_at < '2026-10-01'\n  AND ia.budget_amount IS NOT NULL"
+    "SELECT count(*) AS conversations_with_budget\nFROM interactions i\nJOIN interaction_analysis ia ON ia.interaction_id = i.interaction_id\nWHERE i.started_at >= '2026-09-01'\n  AND i.started_at < '2026-10-01'\n  AND ia.budget_amount IS NOT NULL"
    ],
    "rows": [
     [
      "514"
     ]
    ],
-   "text": "عدد المحادثات التي ذكر فيها العميل ميزانية (بأي عملة) خلال الشهر الماضي (سبتمبر 2026): **514**",
-   "seconds": 13.45,
-   "cost_usd": 0.005224
+   "text": "عدد المحادثات التي ذكر فيها العملاء ميزانية في الشهر الماضي (سبتمبر 2026): **514**",
+   "seconds": 10.46,
+   "cost_usd": 0.008795
   },
   {
    "id": "d36",
@@ -1154,8 +1155,8 @@
     ]
    ],
    "text": "عدد العملاء الجدد — أغسطس 2026 (2026-08-01 → 2026-08-31): **643** مقابل 607 (+5.9%)",
-   "seconds": 8.98,
-   "cost_usd": 0.003208
+   "seconds": 2.62,
+   "cost_usd": 0.001455
   },
   {
    "id": "d37",
@@ -1179,8 +1180,8 @@
     ]
    ],
    "text": "عدد الصفقات المفتوحة: **71**",
-   "seconds": 10.63,
-   "cost_usd": 0.003638
+   "seconds": 2.03,
+   "cost_usd": 0.000965
   },
   {
    "id": "d38",
@@ -1204,8 +1205,8 @@
     ]
    ],
    "text": "متوسط درجة التعامل مع الاعتراضات — الربع 3 من 2026 (2026-07-01 → 2026-09-30): **75.3**",
-   "seconds": 5.5,
-   "cost_usd": 0.0016
+   "seconds": 1.68,
+   "cost_usd": 0.000597
   },
   {
    "id": "d39",
@@ -1229,8 +1230,8 @@
     ]
    ],
    "text": "عدد المحادثات — هذا العام (2026-01-01 → 2026-10-02): **655**",
-   "seconds": 1.88,
-   "cost_usd": 0.000359
+   "seconds": 1.54,
+   "cost_usd": 0.001082
   },
   {
    "id": "d40",
@@ -1254,8 +1255,8 @@
     ]
    ],
    "text": "عدد المحادثات — عيد الأضحى 2026 (2026-05-26 → 2026-05-29): **186**",
-   "seconds": 1.99,
-   "cost_usd": 0.000333
+   "seconds": 1.39,
+   "cost_usd": 0.001015
   },
   {
    "id": "d41",
@@ -1271,7 +1272,7 @@
     "semantic"
    ],
    "sql": [
-    "SELECT COUNT(DISTINCT i.interaction_id) AS conversations\nFROM interactions i\nWHERE i.channel IN ('instagram')\n  AND i.started_at >= '2026-09-01' AND i.started_at < '2026-10-01'"
+    "SELECT COUNT(DISTINCT i.interaction_id) AS conversations\nFROM interactions i\nWHERE i.channel::text IN ('instagram')\n  AND i.started_at >= '2026-09-01' AND i.started_at < '2026-10-01'"
    ],
    "rows": [
     [
@@ -1279,8 +1280,8 @@
     ]
    ],
    "text": "عدد المحادثات — الشهر الماضي (2026-09-01 → 2026-09-30): **231**",
-   "seconds": 2.14,
-   "cost_usd": 0.000876
+   "seconds": 1.68,
+   "cost_usd": 0.001024
   },
   {
    "id": "d42",
@@ -1304,8 +1305,8 @@
     ]
    ],
    "text": "المبيعات (ريال) — هذا العام (2026-01-01 → 2026-10-02): **437,650 ريال**",
-   "seconds": 6.22,
-   "cost_usd": 0.002196
+   "seconds": 1.93,
+   "cost_usd": 0.001212
   },
   {
    "id": "d43",
@@ -1329,8 +1330,8 @@
     ]
    ],
    "text": "عدد المحادثات: **527**",
-   "seconds": 6.1,
-   "cost_usd": 0.002221
+   "seconds": 1.54,
+   "cost_usd": 0.000699
   },
   {
    "id": "d44",
@@ -1354,8 +1355,8 @@
     ]
    ],
    "text": "متوسط تقييم الجودة — الربع 3 من 2026 (2026-07-01 → 2026-09-30): **69.4**",
-   "seconds": 2.88,
-   "cost_usd": 0.001147
+   "seconds": 2.27,
+   "cost_usd": 0.001215
   },
   {
    "id": "d45",
@@ -1379,8 +1380,8 @@
     ]
    ],
    "text": "عدد العملاء الجدد — رمضان 2026 (2026-02-18 → 2026-03-19): **503**",
-   "seconds": 4.02,
-   "cost_usd": 0.001345
+   "seconds": 1.95,
+   "cost_usd": 0.000786
   },
   {
    "id": "d46",
@@ -1397,7 +1398,7 @@
     "sql"
    ],
    "sql": [
-    "WITH sales AS (\n  SELECT\n    a.agent_id,\n    a.full_name,\n    COALESCE(SUM(d.amount) FILTER (\n      WHERE d.close_date >= '2026-04-01' AND d.close_date < '2026-07-01'\n    ), 0) AS q2_sales,\n    COALESCE(SUM(d.amount) FILTER (\n      WHERE d.close_date >= '2026-07-01' AND d.close_date < '2026-10-01'\n    ), 0) AS q3_sales\n  FROM deals d\n  JOIN agents a ON a.agent_id = d.agent_id\n  WHERE d.stage_semantic = 'S'\n    AND d.close_date >= '2026-04-01'\n    AND d.close_date < '2026-10-01'\n  GROUP BY a.agent_id, a.full_name\n)\nSELECT\n  full_name,\n  q2_sales,\n  q3_sales\nFROM sales\nWHERE q3_sales > q2_sales\nORDER BY q3_sales DESC"
+    "WITH agent_quarter_sales AS (\n  SELECT\n    a.agent_id,\n    a.full_name,\n    COALESCE(SUM(CASE\n      WHEN d.close_date >= '2026-04-01' AND d.close_date < '2026-07-01'\n      THEN d.amount END), 0) AS q2_sales,\n    COALESCE(SUM(CASE\n      WHEN d.close_date >= '2026-07-01' AND d.close_date < '2026-10-01'\n      THEN d.amount END), 0) AS q3_sales\n  FROM agents a\n  JOIN deals d\n    ON d.agent_id = a.agent_id\n   AND d.stage_semantic = 'S'\n   AND d.close_date >= '2026-04-01'\n   AND d.close_date < '2026-10-01'\n  WHERE a.is_bot = false\n  GROUP BY a.agent_id, a.full_name\n)\nSELECT\n  full_name,\n  q2_sales,\n  q3_sales\nFROM agent_quarter_sales\nWHERE q3_sales > q2_sales\nORDER BY q3_sales DESC"
    ],
    "rows": [
     [
@@ -1431,9 +1432,9 @@
      "269930.00"
     ]
    ],
-   "text": "الموظفون الذين مجموع مبيعاتهم (الصفقات الناجحة) في الربع الثالث 2026 أعلى من مجموع مبيعاتهم في الربع الثاني 2026",
-   "seconds": 7.19,
-   "cost_usd": 0.004119
+   "text": "الموظفون الذين مبيعاتهم في الربع الثالث 2026 أعلى من مبيعاتهم في الربع الثاني 2026",
+   "seconds": 6.01,
+   "cost_usd": 0.005659
   },
   {
    "id": "d47",
@@ -1450,16 +1451,16 @@
     "sql"
    ],
    "sql": [
-    "SELECT COUNT(*) AS customers_with_more_than_5_conversations\nFROM (\n  SELECT customer_id\n  FROM interactions\n  WHERE customer_id IS NOT NULL\n    AND started_at >= '2026-01-01'\n    AND started_at < '2026-10-03'\n  GROUP BY customer_id\n  HAVING COUNT(*) > 5\n) t"
+    "SELECT COUNT(*) AS customers_count\nFROM (\n  SELECT customer_id\n  FROM interactions\n  WHERE customer_id IS NOT NULL\n    AND started_at >= '2026-01-01'\n    AND started_at < '2026-10-03'\n  GROUP BY customer_id\n  HAVING COUNT(*) > 5\n) t"
    ],
    "rows": [
     [
      "603"
     ]
    ],
-   "text": "عدد العملاء الذين لديهم أكثر من 5 محادثات خلال هذا العام (2026): **603**",
-   "seconds": 6.57,
-   "cost_usd": 0.004267
+   "text": "عدد العملاء الذين لديهم أكثر من 5 محادثات في هذه السنة (2026): **603**",
+   "seconds": 4.64,
+   "cost_usd": 0.00359
   },
   {
    "id": "d48",
@@ -1487,9 +1488,9 @@
      "8120.0"
     ]
    ],
-   "text": "متوسط قيمة الصفقة الناجحة للعملاء السعوديين مقابل العملاء المصريين (كل الفترات)",
-   "seconds": 4.71,
-   "cost_usd": 0.002469
+   "text": "متوسط قيمة الصفقة الناجحة للعملاء السعوديين مقارنة بالعملاء المصريين (كل الفترات)",
+   "seconds": 2.75,
+   "cost_usd": 0.001596
   },
   {
    "id": "d49",
@@ -1506,16 +1507,16 @@
     "sql"
    ],
    "sql": [
-    "SELECT COUNT(*) AS hot_conversations_without_deal\nFROM interactions i\nJOIN interaction_analysis ia\n  ON ia.interaction_id = i.interaction_id\nWHERE ia.lead_temp = 'hot'\n  AND i.started_at >= '2026-01-01'\n  AND i.started_at < '2026-10-03'\n  AND i.deal_id IS NULL\n  AND i.external_deal_id IS NULL"
+    "SELECT count(*) AS hot_conversations_without_deal\nFROM interactions i\nJOIN interaction_analysis ia\n  ON ia.interaction_id = i.interaction_id\nWHERE ia.lead_temp = 'hot'\n  AND i.started_at >= '2026-01-01'\n  AND i.started_at <  '2026-10-03'\n  AND NOT EXISTS (\n    SELECT 1\n    FROM deals d\n    WHERE d.deal_id = i.deal_id\n       OR d.bitrix_deal_id = i.external_deal_id\n  )"
    ],
    "rows": [
     [
      "1556"
     ]
    ],
-   "text": "عدد المحادثات المصنفة كعميل محتمل ساخن (hot) هذا العام ولم تتحول إلى أي صفقة: **1,556**",
-   "seconds": 29.64,
-   "cost_usd": 0.009789
+   "text": "عدد المحادثات ذات الليد الساخن (hot) هذا العام التي لم ينتج عنها أي صفقة: **1,556**",
+   "seconds": 11.17,
+   "cost_usd": 0.009184
   },
   {
    "id": "d50",
@@ -1540,8 +1541,8 @@
     ]
    ],
    "text": "**مكة** — عدد المحادثات: 415",
-   "seconds": 2.78,
-   "cost_usd": 0.002121
+   "seconds": 1.95,
+   "cost_usd": 0.000773
   },
   {
    "id": "d51",
@@ -1558,9 +1559,9 @@
    ],
    "sql": [],
    "rows": [],
-   "text": "تقصد مين الأفضل، ومن أي ناحية؟ حدد لي المعيار والجهة عشان أقدر أجاوب.",
-   "seconds": 7.05,
-   "cost_usd": 0.00362
+   "text": "تقصد أفضل موظف ولا أفضل فريق، ومن أي ناحية؟",
+   "seconds": 1.76,
+   "cost_usd": 0.00193
   },
   {
    "id": "d52",
@@ -1577,9 +1578,9 @@
    ],
    "sql": [],
    "rows": [],
-   "text": "عندنا موظفين اثنين باسم محمد، أي واحد تقصد؟",
-   "seconds": 3.12,
-   "cost_usd": 0.001779
+   "text": "أي محمد تقصد؟ عندنا موظفين اثنين باسم محمد.",
+   "seconds": 2.83,
+   "cost_usd": 0.003028
   },
   {
    "id": "d53",
@@ -1596,9 +1597,9 @@
    ],
    "sql": [],
    "rows": [],
-   "text": "ملخص عن أي شي بالضبط، وأي فترة تقصد؟",
-   "seconds": 3.49,
-   "cost_usd": 0.001511
+   "text": "ملخص عن أيش بالضبط، وأي فترة تبيها؟",
+   "seconds": 1.88,
+   "cost_usd": 0.003212
   },
   {
    "id": "d54",
@@ -1615,9 +1616,9 @@
    ],
    "sql": [],
    "rows": [],
-   "text": "تقصد أي مؤشر بالضبط، وفي أي شهر؟",
-   "seconds": 4.69,
-   "cost_usd": 0.001402
+   "text": "أقدر أساعدك، بس وضّح لي أي شهر تقصد وأيش الناحية اللي تبي أعطيك أرقامها؟",
+   "seconds": 3.83,
+   "cost_usd": 0.004616
   },
   {
    "id": "d55",
@@ -1634,9 +1635,9 @@
    ],
    "sql": [],
    "rows": [],
-   "text": "أي إجازة تقصد؟ حدد الفترة وأنا أجيب لك عدد الحجوزات.",
-   "seconds": 3.12,
-   "cost_usd": 0.000496
+   "text": "أي إجازة تقصد؟ حدد الفترة عشان أقدر أجيب لك الحجوزات فيها.",
+   "seconds": 2.1,
+   "cost_usd": 0.002887
   },
   {
    "id": "d56",
@@ -1653,9 +1654,9 @@
    ],
    "sql": [],
    "rows": [],
-   "text": "أقدر أجاوب على أسئلة عن بيانات المحادثات والصفقات والعملاء فقط، وما أقدر أعطي نصايح أو توصيات عن أوقات السفر.",
-   "seconds": 3.14,
-   "cost_usd": 0.001151
+   "text": "أقدر أجاوب على أسئلة عن بيانات المحادثات والصفقات والعملاء في النظام فقط، وما أقدر أعطي نصايح أو توصيات سفر.",
+   "seconds": 1.43,
+   "cost_usd": 0.001814
   },
   {
    "id": "d57",
@@ -1672,9 +1673,9 @@
    ],
    "sql": [],
    "rows": [],
-   "text": "أنا أقرأ البيانات فقط وأجاوب على أسئلة التحليل، وما أقدر أضيف أو أعدّل أو أحذف أي بيانات.",
-   "seconds": 2.22,
-   "cost_usd": 0.000905
+   "text": "أنا أقرأ البيانات وأحللها فقط، وما أقدر أضيف أو أعدّل أي عميل في النظام.",
+   "seconds": 1.22,
+   "cost_usd": 0.000996
   },
   {
    "id": "d58",
@@ -1691,9 +1692,9 @@
    ],
    "sql": [],
    "rows": [],
-   "text": "أنا محلل بيانات، أقدر أجاوب على أسئلة عن المحادثات والصفقات والعملاء فقط، وما أقدر أكتب بوستات أو محتوى تسويقي.",
-   "seconds": 2.26,
-   "cost_usd": 0.00179
+   "text": "أنا محلل بيانات المحادثات والصفقات والعملاء فقط، وما أقدر أكتب منشورات أو محتوى تسويقي.",
+   "seconds": 1.36,
+   "cost_usd": 0.000912
   },
   {
    "id": "d59",
@@ -1710,9 +1711,9 @@
    ],
    "sql": [],
    "rows": [],
-   "text": "أنا أقرأ البيانات فقط للتحليل، وما أقدر أحذف أو أعدّل أي جدول أو بيانات.",
-   "seconds": 1.98,
-   "cost_usd": 0.001433
+   "text": "أنا أقرأ البيانات فقط، وما أقدر أحذف أو أعدّل أي جدول أو بيانات.",
+   "seconds": 1.44,
+   "cost_usd": 0.001055
   },
   {
    "id": "d60",
@@ -1729,9 +1730,9 @@
    ],
    "sql": [],
    "rows": [],
-   "text": "ما عندي أسعار تذاكر أو رحلات؛ أقدر أجاوب فقط على أسئلة عن بيانات المحادثات والصفقات والعملاء في النظام.",
-   "seconds": 1.38,
-   "cost_usd": 0.000325
+   "text": "ما عندي بيانات أسعار التذاكر، وأقدر أجاوب فقط على أسئلة عن المحادثات والصفقات والعملاء في النظام.",
+   "seconds": 1.36,
+   "cost_usd": 0.001057
   }
  ]
 }

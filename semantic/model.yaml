@@ -26,6 +26,9 @@ rules:
   - "A conversation, chat and interaction (محادثة، شات، تواصل) are the same thing: one row in interactions."
   - "Leads / potential customers (عملاء محتملين، ليدز) = conversations, classified by interaction_analysis.lead_temp (hot/warm/cold)."
   - "A week starts on Sunday. 'Last N months' means the N full calendar months before the current one."
+  - "Agents / employees (موظف، موظفين) are people: the bot (agents.is_bot) is never ranked or listed as an employee."
+  - "'How much did we sell / earn' (كم بعنا، كم دخلنا، كم مبيعات) asks for the sales amount, not a count of deals, unless the question counts deals (صفقة، صفقات)."
+  - "On the live database these columns are Postgres ENUM types: interactions.channel, interactions.handled_by, follow_ups.channel, deals.service, deals.lead_temp, interaction_analysis.service, buying_stage, lead_temp. Cast with ::text before comparing or joining them to a text column such as deals.source_channel."
 
 # ---------------------------------------------------------------------------
 # Entities: what can be counted, and how its tables join.
@@ -41,10 +44,10 @@ entities:
         LEFT JOIN interaction_destinations idst ON idst.analysis_id = ia.analysis_id AND idst.role = 'destination'
         LEFT JOIN destinations dd ON dd.destination_id = idst.destination_id
     dimensions:
-      agent: {sql: a.full_name, joins: [a]}
+      agent: {sql: "CASE WHEN NOT a.is_bot THEN a.full_name END", joins: [a]}
       team: {sql: a.team, joins: [a]}
-      channel: {sql: i.channel}
-      handled_by: {sql: i.handled_by}
+      channel: {sql: i.channel::text}
+      handled_by: {sql: i.handled_by::text}
       after_hours: {sql: i.is_after_hours}
       nationality: {sql: c.nationality, joins: [c]}
       city: {sql: c.residence_city, joins: [c]}
@@ -138,7 +141,7 @@ metrics:
     sql: 100.0 * COUNT(DISTINCT i.interaction_id) FILTER (WHERE i.is_bot_handled) / NULLIF(COUNT(DISTINCT i.interaction_id), 0)
     format: pct
     label: {ar: نسبة المحادثات اللي خدمها البوت, en: Share handled by the bot}
-    means: percent of conversations handled entirely by the bot
+    means: percent of conversations handled entirely by the bot (already counts only the bot; do not filter by handled_by)
   after_hours_share:
     entity: conversations
     sql: 100.0 * COUNT(DISTINCT i.interaction_id) FILTER (WHERE i.is_after_hours) / NULLIF(COUNT(DISTINCT i.interaction_id), 0)

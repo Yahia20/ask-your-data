@@ -1,0 +1,1738 @@
+{
+ "summary": {
+  "accuracy_trusted_answers": 100.0,
+  "trusted_answers": 45,
+  "accuracy_all_answers": 100.0,
+  "coverage": 100.0,
+  "correct_of_answerable": 100.0,
+  "abstained": 0,
+  "clarify_correct": 100.0,
+  "refuse_correct": 100.0,
+  "by_tier": {
+   "semantic": "45/45 (100.0%)",
+   "voted": "5/5 (100.0%)"
+  },
+  "by_category": {
+   "msa": "20/20 (100.0%)",
+   "saudi": "20/20 (100.0%)",
+   "typo": "5/5 (100.0%)",
+   "multistep": "5/5 (100.0%)",
+   "ambiguous": "5/5 (100.0%)",
+   "oos": "5/5 (100.0%)"
+  },
+  "median_seconds": 0.02,
+  "p90_seconds": 0.04,
+  "avg_cost_usd_per_question": 0.0,
+  "model": "deepseek-flash",
+  "set": "dev",
+  "questions": 60,
+  "wall_seconds": 0.4,
+  "llm_spend_usd": 0.0,
+  "warehouse": "postgres"
+ },
+ "rows": [
+  {
+   "id": "d01",
+   "cat": "msa",
+   "q": "كم محادثة وصلتنا عبر فيسبوك في يوليو؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT COUNT(DISTINCT i.interaction_id) AS conversations\nFROM interactions i\nWHERE i.channel::text IN ('facebook')\n  AND i.started_at >= '2026-07-01' AND i.started_at < '2026-08-01'"
+   ],
+   "rows": [
+    [
+     "146"
+    ]
+   ],
+   "text": "عدد المحادثات — يوليو 2026 (2026-07-01 → 2026-07-31): **146**",
+   "seconds": 0.01,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d02",
+   "cat": "msa",
+   "q": "ما متوسط وقت أول رد بالدقائق في محادثات تيليجرام؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT AVG(i.first_response_seconds) FILTER (WHERE NOT i.is_bot_handled) / 60.0 AS avg_first_response_min\nFROM interactions i\nWHERE i.channel::text IN ('telegram')"
+   ],
+   "rows": [
+    [
+     "11.7278820375335121"
+    ]
+   ],
+   "text": "متوسط وقت أول رد (دقيقة): **11.7 دقيقة**",
+   "seconds": 0.02,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d03",
+   "cat": "msa",
+   "q": "ما المبيعات حسب القناة في الربع الثاني؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT d.source_channel AS channel, SUM(d.amount) FILTER (WHERE d.stage_semantic = 'S') AS revenue\nFROM deals d\nWHERE d.source_channel IS NOT NULL\n  AND d.close_date >= '2026-04-01' AND d.close_date < '2026-07-01'\nGROUP BY 1\nORDER BY revenue DESC NULLS LAST"
+   ],
+   "rows": [
+    [
+     "whatsapp",
+     "1154470.00"
+    ],
+    [
+     "instagram",
+     "226470.00"
+    ],
+    [
+     "facebook",
+     "97100.00"
+    ],
+    [
+     "webchat",
+     "63050.00"
+    ],
+    [
+     "telegram",
+     "18450.00"
+    ]
+   ],
+   "text": "المبيعات (إجمالي مبلغ الصفقات الناجحة) حسب القناة في الربع الثاني 2026 — الربع 2 من 2026 (2026-04-01 → 2026-06-30)",
+   "seconds": 0.02,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d04",
+   "cat": "msa",
+   "q": "من الموظف الذي أغلق أكبر عدد من الصفقات الناجحة في الشهر الماضي؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT a.full_name AS agent, COUNT(DISTINCT d.deal_id) FILTER (WHERE d.stage_semantic = 'S') AS deals_won\nFROM deals d\nLEFT JOIN agents a ON a.agent_id = d.agent_id\nWHERE a.full_name IS NOT NULL\n  AND d.close_date >= '2026-09-01' AND d.close_date < '2026-10-01'\nGROUP BY 1\nORDER BY deals_won DESC NULLS LAST LIMIT 1"
+   ],
+   "rows": [
+    [
+     "أحمد الغامدي",
+     "16"
+    ]
+   ],
+   "text": "**أحمد الغامدي** — عدد الصفقات الناجحة: 16 — الشهر الماضي (2026-09-01 → 2026-09-30)",
+   "seconds": 0.01,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d05",
+   "cat": "msa",
+   "q": "ما متوسط درجة تقديم العرض لكل موظف هذا العام؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT a.full_name AS agent, AVG(e.m2_offer) AS avg_offer\nFROM agent_evaluations e\nJOIN interactions i ON i.interaction_id = e.interaction_id\nJOIN agents a ON a.agent_id = e.agent_id\nWHERE e.contract_status = 'ok' AND e.gradeable AND e.final_score IS NOT NULL AND a.is_bot = false\n  AND a.full_name IS NOT NULL\n  AND i.started_at >= '2026-01-01' AND i.started_at < '2026-10-03'\nGROUP BY 1\nORDER BY avg_offer DESC NULLS LAST"
+   ],
+   "rows": [
+    [
+     "سارة القحطاني",
+     "84.6136277173913043"
+    ],
+    [
+     "أحمد الغامدي",
+     "80.6574797843665768"
+    ],
+    [
+     "ريم الزهراني",
+     "79.1036621621621622"
+    ],
+    [
+     "نورة الدوسري",
+     "78.1514763231197772"
+    ],
+    [
+     "هبة عبدالعزيز",
+     "76.0156976744186047"
+    ],
+    [
+     "محمد العتيبي",
+     "74.3069587628865979"
+    ],
+    [
+     "عبدالرحمن المطيري",
+     "71.7992818428184282"
+    ],
+    [
+     "فهد الحربي",
+     "69.1780494505494505"
+    ],
+    [
+     "محمد الشهري",
+     "65.7710453920220083"
+    ],
+    [
+     "خالد السبيعي",
+     "60.7627704485488127"
+    ]
+   ],
+   "text": "متوسط درجة تقديم العرض (الوحدة الثانية في التقييم) لكل موظف هذا العام 2026",
+   "seconds": 0.03,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d06",
+   "cat": "msa",
+   "q": "كم عدد العملاء الجدد من القاهرة هذا العام؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT COUNT(DISTINCT c.customer_id) AS new_customers\nFROM customers c\nWHERE c.residence_city IN ('Cairo')\n  AND c.first_seen_at >= '2026-01-01' AND c.first_seen_at < '2026-10-03'"
+   ],
+   "rows": [
+    [
+     "473"
+    ]
+   ],
+   "text": "عدد العملاء الجدد — هذا العام (2026-01-01 → 2026-10-02): **473**",
+   "seconds": 0.03,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d07",
+   "cat": "msa",
+   "q": "ما نسبة المحادثات التي بدأت خارج الدوام في الشهر الماضي؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT 100.0 * COUNT(DISTINCT i.interaction_id) FILTER (WHERE i.is_after_hours) / NULLIF(COUNT(DISTINCT i.interaction_id), 0) AS after_hours_share\nFROM interactions i\nWHERE i.started_at >= '2026-09-01' AND i.started_at < '2026-10-01'"
+   ],
+   "rows": [
+    [
+     "20.6779661016949153"
+    ]
+   ],
+   "text": "نسبة المحادثات خارج الدوام — الشهر الماضي (2026-09-01 → 2026-09-30): **20.7%**",
+   "seconds": 0.02,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d08",
+   "cat": "msa",
+   "q": "كم عدد المحادثات التي طلب فيها العملاء باكو في الربع الثاني؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT COUNT(DISTINCT i.interaction_id) AS conversations\nFROM interactions i\nLEFT JOIN interaction_analysis ia ON ia.interaction_id = i.interaction_id\nWHERE EXISTS (SELECT 1 FROM interaction_destinations fx JOIN destinations fd ON fd.destination_id = fx.destination_id WHERE fx.analysis_id = ia.analysis_id AND fx.role = 'destination' AND fd.canonical_name IN ('Baku'))\n  AND i.started_at >= '2026-04-01' AND i.started_at < '2026-07-01'"
+   ],
+   "rows": [
+    [
+     "194"
+    ]
+   ],
+   "text": "عدد المحادثات — الربع 2 من 2026 (2026-04-01 → 2026-06-30): **194**",
+   "seconds": 0.03,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d09",
+   "cat": "msa",
+   "q": "ما قيمة الصفقات المفتوحة لكل موظف؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT a.full_name AS agent, SUM(d.amount) FILTER (WHERE d.stage_semantic = 'P') AS open_pipeline_value\nFROM deals d\nLEFT JOIN agents a ON a.agent_id = d.agent_id\nWHERE a.full_name IS NOT NULL\nGROUP BY 1\nORDER BY open_pipeline_value DESC NULLS LAST"
+   ],
+   "rows": [
+    [
+     "محمد الشهري",
+     "720770.00"
+    ],
+    [
+     "محمد العتيبي",
+     "657990.00"
+    ],
+    [
+     "فهد الحربي",
+     "654860.00"
+    ],
+    [
+     "سارة القحطاني",
+     "630700.00"
+    ],
+    [
+     "ريم الزهراني",
+     "565740.00"
+    ],
+    [
+     "أحمد الغامدي",
+     "479380.00"
+    ],
+    [
+     "هبة عبدالعزيز",
+     "478610.00"
+    ],
+    [
+     "خالد السبيعي",
+     "165730.00"
+    ]
+   ],
+   "text": "قيمة الصفقات المفتوحة لكل موظف (كل الفترات)",
+   "seconds": 0.03,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d10",
+   "cat": "msa",
+   "q": "كم صفقة فندقية خسرناها هذا العام؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT COUNT(DISTINCT d.deal_id) FILTER (WHERE d.stage_semantic = 'F') AS deals_lost\nFROM deals d\nWHERE d.service IN ('hotel')\n  AND d.close_date >= '2026-01-01' AND d.close_date < '2026-10-03'"
+   ],
+   "rows": [
+    [
+     "259"
+    ]
+   ],
+   "text": "عدد الصفقات الخاسرة — هذا العام (2026-01-01 → 2026-10-02): **259**",
+   "seconds": 0.04,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d11",
+   "cat": "msa",
+   "q": "ما عدد التقييمات الممتازة لكل موظف في الربع الثالث؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "voted",
+   "votes": "2/3",
+   "trace": [
+    "sql",
+    "sql"
+   ],
+   "sql": [
+    "SELECT a.full_name AS agent_name,\n       COUNT(*) AS excellent_evaluations\nFROM agent_evaluations e\nJOIN interactions i ON i.interaction_id = e.interaction_id\nJOIN agents a ON a.agent_id = e.agent_id\nWHERE a.is_bot = false\n  AND e.contract_status = 'ok'\n  AND e.gradeable\n  AND e.final_score IS NOT NULL\n  AND e.performance_level = 'Excellent'\n  AND i.started_at >= '2026-07-01'\n  AND i.started_at < '2026-10-01'\nGROUP BY a.agent_id, a.full_name\nORDER BY excellent_evaluations DESC, agent_name"
+   ],
+   "rows": [
+    [
+     "سارة القحطاني",
+     "193"
+    ],
+    [
+     "ريم الزهراني",
+     "113"
+    ],
+    [
+     "أحمد الغامدي",
+     "106"
+    ],
+    [
+     "نورة الدوسري",
+     "74"
+    ],
+    [
+     "هبة عبدالعزيز",
+     "59"
+    ],
+    [
+     "محمد العتيبي",
+     "53"
+    ],
+    [
+     "عبدالرحمن المطيري",
+     "46"
+    ],
+    [
+     "فهد الحربي",
+     "21"
+    ],
+    [
+     "محمد الشهري",
+     "13"
+    ]
+   ],
+   "text": "عدد التقييمات الممتازة لكل موظف في الربع الثالث 2026",
+   "seconds": 0.06,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d12",
+   "cat": "msa",
+   "q": "ما عدد وعود المتابعة لكل قناة هذا العام؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT f.channel AS channel, COUNT(DISTINCT f.follow_up_id) AS promises\nFROM follow_ups f\nWHERE f.channel IS NOT NULL\n  AND f.promised_at >= '2026-01-01' AND f.promised_at < '2026-10-03'\nGROUP BY 1\nORDER BY promises DESC NULLS LAST"
+   ],
+   "rows": [
+    [
+     "whatsapp",
+     "2092"
+    ],
+    [
+     "instagram",
+     "440"
+    ],
+    [
+     "facebook",
+     "188"
+    ],
+    [
+     "webchat",
+     "146"
+    ],
+    [
+     "telegram",
+     "88"
+    ]
+   ],
+   "text": "عدد وعود المتابعة لكل قناة خلال هذا العام 2026",
+   "seconds": 0.02,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d13",
+   "cat": "msa",
+   "q": "ما متوسط الميزانية بالريال للعملاء الساخنين؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT AVG(ia.budget_amount) FILTER (WHERE ia.budget_currency = 'SAR') AS avg_budget_sar\nFROM interactions i\nLEFT JOIN interaction_analysis ia ON ia.interaction_id = i.interaction_id\nWHERE ia.lead_temp IN ('hot')"
+   ],
+   "rows": [
+    [
+     "8413.0664857530529172"
+    ]
+   ],
+   "text": "متوسط ميزانية العميل (ريال): **8,413 ريال**",
+   "seconds": 0.03,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d14",
+   "cat": "msa",
+   "q": "كم عدد المحادثات الأسبوعية في سبتمبر؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT date_trunc('week', i.started_at)::date AS week, COUNT(DISTINCT i.interaction_id) AS conversations\nFROM interactions i\nWHERE i.started_at >= '2026-09-01' AND i.started_at < '2026-10-01'\nGROUP BY 1\nORDER BY 1"
+   ],
+   "rows": [
+    [
+     "2026-08-31",
+     "247"
+    ],
+    [
+     "2026-09-07",
+     "317"
+    ],
+    [
+     "2026-09-14",
+     "363"
+    ],
+    [
+     "2026-09-21",
+     "408"
+    ],
+    [
+     "2026-09-28",
+     "140"
+    ]
+   ],
+   "text": "عدد المحادثات أسبوعيًا خلال شهر سبتمبر 2026",
+   "seconds": 0.02,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d15",
+   "cat": "msa",
+   "q": "قارن المبيعات في يونيو بالمبيعات في مايو.",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT SUM(d.amount) FILTER (WHERE d.stage_semantic = 'S') AS revenue\nFROM deals d\nWHERE d.close_date >= '2026-06-01' AND d.close_date < '2026-07-01'",
+    "SELECT SUM(d.amount) FILTER (WHERE d.stage_semantic = 'S') AS revenue\nFROM deals d\nWHERE d.close_date >= '2026-05-01' AND d.close_date < '2026-06-01'"
+   ],
+   "rows": [
+    [
+     "583390.00",
+     "484640.00",
+     "20.375949158138"
+    ]
+   ],
+   "text": "المبيعات (ريال) — يونيو 2026 (2026-06-01 → 2026-06-30): **583,390 ريال** مقابل 484,640 ريال (+20.4%)",
+   "seconds": 0.03,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d16",
+   "cat": "msa",
+   "q": "ما نسبة الالتزام بالمتابعة لفريق خدمة العملاء؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT 100.0 * COUNT(DISTINCT f.follow_up_id) FILTER (WHERE f.status = 'fulfilled') / NULLIF(COUNT(DISTINCT f.follow_up_id) FILTER (WHERE f.status IN ('fulfilled', 'late', 'missed')), 0) AS kept_rate\nFROM follow_ups f\nLEFT JOIN agents a ON a.agent_id = f.agent_id\nWHERE a.team IN ('support')"
+   ],
+   "rows": [
+    [
+     "70.3832752613240418"
+    ]
+   ],
+   "text": "نسبة الالتزام بالمتابعة: **70.4%**",
+   "seconds": 0.01,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d17",
+   "cat": "msa",
+   "q": "كم محادثة كانت شكوى في الشهر الماضي؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT COUNT(DISTINCT i.interaction_id) AS conversations\nFROM interactions i\nLEFT JOIN interaction_analysis ia ON ia.interaction_id = i.interaction_id\nWHERE ia.intent IN ('complaint')\n  AND i.started_at >= '2026-09-01' AND i.started_at < '2026-10-01'"
+   ],
+   "rows": [
+    [
+     "63"
+    ]
+   ],
+   "text": "عدد المحادثات — الشهر الماضي (2026-09-01 → 2026-09-30): **63**",
+   "seconds": 0.02,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d18",
+   "cat": "msa",
+   "q": "كم عميلًا كويتيًا لدينا؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT COUNT(DISTINCT c.customer_id) AS customers_total\nFROM customers c\nWHERE c.nationality IN ('Kuwaiti')"
+   ],
+   "rows": [
+    [
+     "278"
+    ]
+   ],
+   "text": "إجمالي العملاء: **278**",
+   "seconds": 0.02,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d19",
+   "cat": "msa",
+   "q": "ما متوسط عدد الرسائل في محادثات البوت؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT AVG(i.message_count) AS avg_messages\nFROM interactions i\nWHERE i.handled_by::text IN ('bot')"
+   ],
+   "rows": [
+    [
+     "5.5728332119446468"
+    ]
+   ],
+   "text": "متوسط عدد الرسائل: **5.6**",
+   "seconds": 0.01,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d20",
+   "cat": "msa",
+   "q": "ما المبيعات خلال عيد الفطر؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT SUM(d.amount) FILTER (WHERE d.stage_semantic = 'S') AS revenue\nFROM deals d\nWHERE d.close_date >= '2026-03-20' AND d.close_date < '2026-03-24'"
+   ],
+   "rows": [
+    [
+     "125210.00"
+    ]
+   ],
+   "text": "المبيعات (ريال) — عيد الفطر 2026 (2026-03-20 → 2026-03-23): **125,210 ريال**",
+   "seconds": 0.02,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d21",
+   "cat": "saudi",
+   "q": "كم محادثة جتنا من الإنستا الأسبوع اللي فات؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT COUNT(DISTINCT i.interaction_id) AS conversations\nFROM interactions i\nWHERE i.channel::text IN ('instagram')\n  AND i.started_at >= '2026-09-20' AND i.started_at < '2026-09-27'"
+   ],
+   "rows": [
+    [
+     "64"
+    ]
+   ],
+   "text": "عدد المحادثات — الأسبوع الماضي (2026-09-20 → 2026-09-26): **64**",
+   "seconds": 0.01,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d22",
+   "cat": "saudi",
+   "q": "مين أبطأ موظف بالرد الشهر اللي فات؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT CASE WHEN NOT a.is_bot THEN a.full_name END AS agent, AVG(i.first_response_seconds) FILTER (WHERE NOT i.is_bot_handled) / 60.0 AS avg_first_response_min\nFROM interactions i\nLEFT JOIN agents a ON a.agent_id = i.agent_id\nWHERE CASE WHEN NOT a.is_bot THEN a.full_name END IS NOT NULL\n  AND i.started_at >= '2026-09-01' AND i.started_at < '2026-10-01'\nGROUP BY 1\nORDER BY avg_first_response_min DESC NULLS LAST LIMIT 1"
+   ],
+   "rows": [
+    [
+     "محمد الشهري",
+     "24.5309701492537313"
+    ]
+   ],
+   "text": "**محمد الشهري** — متوسط وقت أول رد (دقيقة): 24.5 دقيقة — الشهر الماضي (2026-09-01 → 2026-09-30)",
+   "seconds": 0.01,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d23",
+   "cat": "saudi",
+   "q": "كم دخلنا من الباقات هالسنة؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT SUM(d.amount) FILTER (WHERE d.stage_semantic = 'S') AS revenue\nFROM deals d\nWHERE d.service IN ('package')\n  AND d.close_date >= '2026-01-01' AND d.close_date < '2026-10-03'"
+   ],
+   "rows": [
+    [
+     "3619840.00"
+    ]
+   ],
+   "text": "المبيعات (ريال) — هذا العام (2026-01-01 → 2026-10-02): **3,619,840 ريال**",
+   "seconds": 0.0,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d24",
+   "cat": "saudi",
+   "q": "عطني نسبة القفل لكل موظف هالسنة",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT a.full_name AS agent, 100.0 * COUNT(DISTINCT d.deal_id) FILTER (WHERE d.stage_semantic = 'S') / NULLIF(COUNT(DISTINCT d.deal_id) FILTER (WHERE d.stage_semantic IN ('S', 'F')), 0) AS win_rate\nFROM deals d\nLEFT JOIN agents a ON a.agent_id = d.agent_id\nWHERE a.full_name IS NOT NULL\n  AND d.close_date >= '2026-01-01' AND d.close_date < '2026-10-03'\nGROUP BY 1\nORDER BY win_rate DESC NULLS LAST"
+   ],
+   "rows": [
+    [
+     "ريم الزهراني",
+     "30.2114803625377644"
+    ],
+    [
+     "سارة القحطاني",
+     "27.7419354838709677"
+    ],
+    [
+     "أحمد الغامدي",
+     "26.9841269841269841"
+    ],
+    [
+     "هبة عبدالعزيز",
+     "26.8987341772151899"
+    ],
+    [
+     "فهد الحربي",
+     "26.1484098939929329"
+    ],
+    [
+     "محمد العتيبي",
+     "25.7575757575757576"
+    ],
+    [
+     "خالد السبيعي",
+     "23.4939759036144578"
+    ],
+    [
+     "محمد الشهري",
+     "20.7547169811320755"
+    ]
+   ],
+   "text": "نسبة إغلاق الصفقات (win rate) لكل موظف هذه السنة 2026 — هذا العام (2026-01-01 → 2026-10-02)",
+   "seconds": 0.01,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d25",
+   "cat": "saudi",
+   "q": "كم عميل جديد جانا هالأسبوع؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT COUNT(DISTINCT c.customer_id) AS new_customers\nFROM customers c\nWHERE c.first_seen_at >= '2026-09-27' AND c.first_seen_at < '2026-10-03'"
+   ],
+   "rows": [
+    [
+     "67"
+    ]
+   ],
+   "text": "عدد العملاء الجدد — هذا الأسبوع (2026-09-27 → 2026-10-02): **67**",
+   "seconds": 0.01,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d26",
+   "cat": "saudi",
+   "q": "وش تقييم هبة الشهر اللي فات؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT AVG(e.final_score) AS avg_score\nFROM agent_evaluations e\nJOIN interactions i ON i.interaction_id = e.interaction_id\nJOIN agents a ON a.agent_id = e.agent_id\nWHERE e.contract_status = 'ok' AND e.gradeable AND e.final_score IS NOT NULL AND a.is_bot = false\n  AND a.full_name IN ('هبة عبدالعزيز')\n  AND i.started_at >= '2026-09-01' AND i.started_at < '2026-10-01'"
+   ],
+   "rows": [
+    [
+     "75.3561250000000000"
+    ]
+   ],
+   "text": "متوسط تقييم الجودة — الشهر الماضي (2026-09-01 → 2026-09-30): **75.4**",
+   "seconds": 0.02,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d27",
+   "cat": "saudi",
+   "q": "كم محادثة عن المالديف جتنا هالسنة؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT COUNT(DISTINCT i.interaction_id) AS conversations\nFROM interactions i\nLEFT JOIN interaction_analysis ia ON ia.interaction_id = i.interaction_id\nWHERE EXISTS (SELECT 1 FROM interaction_destinations fx JOIN destinations fd ON fd.destination_id = fx.destination_id WHERE fx.analysis_id = ia.analysis_id AND fx.role = 'destination' AND fd.canonical_name IN ('Maldives'))\n  AND i.started_at >= '2026-01-01' AND i.started_at < '2026-10-03'"
+   ],
+   "rows": [
+    [
+     "453"
+    ]
+   ],
+   "text": "عدد المحادثات — هذا العام (2026-01-01 → 2026-10-02): **453**",
+   "seconds": 0.02,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d28",
+   "cat": "saudi",
+   "q": "كم صفقة كسبها فهد الشهر اللي فات؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT COUNT(DISTINCT d.deal_id) FILTER (WHERE d.stage_semantic = 'S') AS deals_won\nFROM deals d\nLEFT JOIN agents a ON a.agent_id = d.agent_id\nWHERE a.full_name IN ('فهد الحربي')\n  AND d.close_date >= '2026-09-01' AND d.close_date < '2026-10-01'"
+   ],
+   "rows": [
+    [
+     "4"
+    ]
+   ],
+   "text": "عدد الصفقات الناجحة — الشهر الماضي (2026-09-01 → 2026-09-30): **4**",
+   "seconds": 0.01,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d29",
+   "cat": "saudi",
+   "q": "وش أكثر خدمة يسألون عنها بالصيف؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT ia.service AS service, COUNT(DISTINCT i.interaction_id) AS conversations\nFROM interactions i\nLEFT JOIN interaction_analysis ia ON ia.interaction_id = i.interaction_id\nWHERE ia.service IS NOT NULL\n  AND i.started_at >= '2026-06-01' AND i.started_at < '2026-09-01'\nGROUP BY 1\nORDER BY conversations DESC NULLS LAST LIMIT 1"
+   ],
+   "rows": [
+    [
+     "package",
+     "2280"
+    ]
+   ],
+   "text": "**باقات** — عدد المحادثات: 2,280 — صيف 2026 (2026-06-01 → 2026-08-31)",
+   "seconds": 0.02,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d30",
+   "cat": "saudi",
+   "q": "كم متابعة فاتت على عبدالرحمن هالسنة؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT COUNT(DISTINCT f.follow_up_id) AS promises\nFROM follow_ups f\nLEFT JOIN agents a ON a.agent_id = f.agent_id\nWHERE a.full_name IN ('عبدالرحمن المطيري')\n  AND f.status IN ('missed')\n  AND f.promised_at >= '2026-01-01' AND f.promised_at < '2026-10-03'"
+   ],
+   "rows": [
+    [
+     "61"
+    ]
+   ],
+   "text": "عدد وعود المتابعة — هذا العام (2026-01-01 → 2026-10-02): **61**",
+   "seconds": 0.02,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d31",
+   "cat": "saudi",
+   "q": "عطني الدخل كل شهر من أول السنة",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT date_trunc('month', d.close_date)::date AS month, SUM(d.amount) FILTER (WHERE d.stage_semantic = 'S') AS revenue\nFROM deals d\nWHERE d.close_date >= '2026-01-01' AND d.close_date < '2026-10-03'\nGROUP BY 1\nORDER BY 1"
+   ],
+   "rows": [
+    [
+     "2026-01-01",
+     "307010.00"
+    ],
+    [
+     "2026-02-01",
+     "355690.00"
+    ],
+    [
+     "2026-03-01",
+     "582000.00"
+    ],
+    [
+     "2026-04-01",
+     "491510.00"
+    ],
+    [
+     "2026-05-01",
+     "484640.00"
+    ],
+    [
+     "2026-06-01",
+     "583390.00"
+    ],
+    [
+     "2026-07-01",
+     "882200.00"
+    ],
+    [
+     "2026-08-01",
+     "832870.00"
+    ],
+    [
+     "2026-09-01",
+     "612500.00"
+    ],
+    [
+     "2026-10-01",
+     "19680.00"
+    ]
+   ],
+   "text": "الإيرادات (مبيعات الصفقات الناجحة) لكل شهر من أول السنة 2026 — هذا العام (2026-01-01 → 2026-10-02)",
+   "seconds": 0.03,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d32",
+   "cat": "saudi",
+   "q": "كم نسبة المحادثات اللي البوت خدمها هالسنة؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT 100.0 * COUNT(DISTINCT i.interaction_id) FILTER (WHERE i.is_bot_handled) / NULLIF(COUNT(DISTINCT i.interaction_id), 0) AS bot_share\nFROM interactions i\nWHERE i.started_at >= '2026-01-01' AND i.started_at < '2026-10-03'"
+   ],
+   "rows": [
+    [
+     "18.3066666666666667"
+    ]
+   ],
+   "text": "نسبة المحادثات اللي خدمها البوت — هذا العام (2026-01-01 → 2026-10-02): **18.3%**",
+   "seconds": 0.03,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d33",
+   "cat": "saudi",
+   "q": "كم أردني كلمنا من أول السنة؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT COUNT(DISTINCT i.customer_id) AS customers_contacted\nFROM interactions i\nLEFT JOIN customers c ON c.customer_id = i.customer_id\nWHERE c.nationality IN ('Jordanian')\n  AND i.started_at >= '2026-01-01' AND i.started_at < '2026-10-03'"
+   ],
+   "rows": [
+    [
+     "150"
+    ]
+   ],
+   "text": "عدد العملاء المتواصلين — هذا العام (2026-01-01 → 2026-10-02): **150**",
+   "seconds": 0.02,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d34",
+   "cat": "saudi",
+   "q": "وش متوسط الصفقة الناجحة عند ريم؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT AVG(d.amount) FILTER (WHERE d.stage_semantic = 'S') AS avg_deal_value\nFROM deals d\nLEFT JOIN agents a ON a.agent_id = d.agent_id\nWHERE a.full_name IN ('ريم الزهراني')"
+   ],
+   "rows": [
+    [
+     "7208.6000000000000000"
+    ]
+   ],
+   "text": "متوسط قيمة الصفقة الناجحة (ريال): **7,209 ريال**",
+   "seconds": 0.02,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d35",
+   "cat": "saudi",
+   "q": "كم محادثة ذكروا فيها ميزانية الشهر اللي فات؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "voted",
+   "votes": "3/3",
+   "trace": [
+    "sql",
+    "sql"
+   ],
+   "sql": [
+    "SELECT count(*) AS conversations_with_budget\nFROM interactions i\nJOIN interaction_analysis ia ON ia.interaction_id = i.interaction_id\nWHERE i.started_at >= '2026-09-01'\n  AND i.started_at < '2026-10-01'\n  AND ia.budget_amount IS NOT NULL"
+   ],
+   "rows": [
+    [
+     "514"
+    ]
+   ],
+   "text": "عدد المحادثات التي ذكر فيها العملاء ميزانية في الشهر الماضي (سبتمبر 2026): **514**",
+   "seconds": 0.03,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d36",
+   "cat": "saudi",
+   "q": "قارن لي عدد العملاء الجدد في أغسطس بيوليو",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT COUNT(DISTINCT c.customer_id) AS new_customers\nFROM customers c\nWHERE c.first_seen_at >= '2026-08-01' AND c.first_seen_at < '2026-09-01'",
+    "SELECT COUNT(DISTINCT c.customer_id) AS new_customers\nFROM customers c\nWHERE c.first_seen_at >= '2026-07-01' AND c.first_seen_at < '2026-08-01'"
+   ],
+   "rows": [
+    [
+     "643",
+     "607",
+     "5.930807248764415"
+    ]
+   ],
+   "text": "عدد العملاء الجدد — أغسطس 2026 (2026-08-01 → 2026-08-31): **643** مقابل 607 (+5.9%)",
+   "seconds": 0.04,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d37",
+   "cat": "saudi",
+   "q": "كم صفقة مفتوحة عند سارة؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT COUNT(DISTINCT d.deal_id) FILTER (WHERE d.stage_semantic = 'P') AS open_deals\nFROM deals d\nLEFT JOIN agents a ON a.agent_id = d.agent_id\nWHERE a.full_name IN ('سارة القحطاني')"
+   ],
+   "rows": [
+    [
+     "71"
+    ]
+   ],
+   "text": "عدد الصفقات المفتوحة: **71**",
+   "seconds": 0.03,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d38",
+   "cat": "saudi",
+   "q": "وش متوسط درجة التعامل مع الاعتراضات بالربع الثالث؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT AVG(e.m3_objections) AS avg_objections\nFROM agent_evaluations e\nJOIN interactions i ON i.interaction_id = e.interaction_id\nJOIN agents a ON a.agent_id = e.agent_id\nWHERE e.contract_status = 'ok' AND e.gradeable AND e.final_score IS NOT NULL AND a.is_bot = false\n  AND i.started_at >= '2026-07-01' AND i.started_at < '2026-10-01'"
+   ],
+   "rows": [
+    [
+     "75.2565449233016801"
+    ]
+   ],
+   "text": "متوسط درجة التعامل مع الاعتراضات — الربع 3 من 2026 (2026-07-01 → 2026-09-30): **75.3**",
+   "seconds": 0.02,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d39",
+   "cat": "saudi",
+   "q": "كم محادثة جتنا من أبها هالسنة؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT COUNT(DISTINCT i.interaction_id) AS conversations\nFROM interactions i\nLEFT JOIN customers c ON c.customer_id = i.customer_id\nWHERE c.residence_city IN ('Abha')\n  AND i.started_at >= '2026-01-01' AND i.started_at < '2026-10-03'"
+   ],
+   "rows": [
+    [
+     "655"
+    ]
+   ],
+   "text": "عدد المحادثات — هذا العام (2026-01-01 → 2026-10-02): **655**",
+   "seconds": 0.03,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d40",
+   "cat": "saudi",
+   "q": "كم محادثة جتنا بعيد الأضحى؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT COUNT(DISTINCT i.interaction_id) AS conversations\nFROM interactions i\nWHERE i.started_at >= '2026-05-26' AND i.started_at < '2026-05-30'"
+   ],
+   "rows": [
+    [
+     "186"
+    ]
+   ],
+   "text": "عدد المحادثات — عيد الأضحى 2026 (2026-05-26 → 2026-05-29): **186**",
+   "seconds": 0.02,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d41",
+   "cat": "typo",
+   "q": "كم محادثه جت من الانستقرام الشهر الماضى",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT COUNT(DISTINCT i.interaction_id) AS conversations\nFROM interactions i\nWHERE i.channel::text IN ('instagram')\n  AND i.started_at >= '2026-09-01' AND i.started_at < '2026-10-01'"
+   ],
+   "rows": [
+    [
+     "231"
+    ]
+   ],
+   "text": "عدد المحادثات — الشهر الماضي (2026-09-01 → 2026-09-30): **231**",
+   "seconds": 0.02,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d42",
+   "cat": "typo",
+   "q": "مبيعات الفنادق السنه دى",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT SUM(d.amount) FILTER (WHERE d.stage_semantic = 'S') AS revenue\nFROM deals d\nWHERE d.service IN ('hotel')\n  AND d.close_date >= '2026-01-01' AND d.close_date < '2026-10-03'"
+   ],
+   "rows": [
+    [
+     "437650.00"
+    ]
+   ],
+   "text": "المبيعات (ريال) — هذا العام (2026-01-01 → 2026-10-02): **437,650 ريال**",
+   "seconds": 0.02,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d43",
+   "cat": "typo",
+   "q": "كم محادثه عن انطاليا",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT COUNT(DISTINCT i.interaction_id) AS conversations\nFROM interactions i\nLEFT JOIN interaction_analysis ia ON ia.interaction_id = i.interaction_id\nWHERE EXISTS (SELECT 1 FROM interaction_destinations fx JOIN destinations fd ON fd.destination_id = fx.destination_id WHERE fx.analysis_id = ia.analysis_id AND fx.role = 'destination' AND fd.canonical_name IN ('Antalya'))"
+   ],
+   "rows": [
+    [
+     "527"
+    ]
+   ],
+   "text": "عدد المحادثات: **527**",
+   "seconds": 0.01,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d44",
+   "cat": "typo",
+   "q": "تقيم فهد الحربى الربع التالت",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT AVG(e.final_score) AS avg_score\nFROM agent_evaluations e\nJOIN interactions i ON i.interaction_id = e.interaction_id\nJOIN agents a ON a.agent_id = e.agent_id\nWHERE e.contract_status = 'ok' AND e.gradeable AND e.final_score IS NOT NULL AND a.is_bot = false\n  AND a.full_name IN ('فهد الحربي')\n  AND i.started_at >= '2026-07-01' AND i.started_at < '2026-10-01'"
+   ],
+   "rows": [
+    [
+     "69.4093150684931507"
+    ]
+   ],
+   "text": "متوسط تقييم الجودة — الربع 3 من 2026 (2026-07-01 → 2026-09-30): **69.4**",
+   "seconds": 0.02,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d45",
+   "cat": "typo",
+   "q": "عدد العملاء الجداد في رمضان",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT COUNT(DISTINCT c.customer_id) AS new_customers\nFROM customers c\nWHERE c.first_seen_at >= '2026-02-18' AND c.first_seen_at < '2026-03-20'"
+   ],
+   "rows": [
+    [
+     "503"
+    ]
+   ],
+   "text": "عدد العملاء الجدد — رمضان 2026 (2026-02-18 → 2026-03-19): **503**",
+   "seconds": 0.02,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d46",
+   "cat": "multistep",
+   "q": "من هم الموظفون الذين مبيعاتهم في الربع الثالث أعلى من الربع الثاني؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "voted",
+   "votes": "3/3",
+   "trace": [
+    "sql",
+    "sql"
+   ],
+   "sql": [
+    "WITH agent_quarter_sales AS (\n  SELECT\n    a.agent_id,\n    a.full_name,\n    COALESCE(SUM(CASE\n      WHEN d.close_date >= '2026-04-01' AND d.close_date < '2026-07-01'\n      THEN d.amount END), 0) AS q2_sales,\n    COALESCE(SUM(CASE\n      WHEN d.close_date >= '2026-07-01' AND d.close_date < '2026-10-01'\n      THEN d.amount END), 0) AS q3_sales\n  FROM agents a\n  JOIN deals d\n    ON d.agent_id = a.agent_id\n   AND d.stage_semantic = 'S'\n   AND d.close_date >= '2026-04-01'\n   AND d.close_date < '2026-10-01'\n  WHERE a.is_bot = false\n  GROUP BY a.agent_id, a.full_name\n)\nSELECT\n  full_name,\n  q2_sales,\n  q3_sales\nFROM agent_quarter_sales\nWHERE q3_sales > q2_sales\nORDER BY q3_sales DESC"
+   ],
+   "rows": [
+    [
+     "أحمد الغامدي",
+     "114460.00",
+     "433970.00"
+    ],
+    [
+     "هبة عبدالعزيز",
+     "184360.00",
+     "426130.00"
+    ],
+    [
+     "سارة القحطاني",
+     "242530.00",
+     "341190.00"
+    ],
+    [
+     "ريم الزهراني",
+     "179810.00",
+     "336210.00"
+    ],
+    [
+     "محمد العتيبي",
+     "167230.00",
+     "309340.00"
+    ],
+    [
+     "محمد الشهري",
+     "204250.00",
+     "269930.00"
+    ]
+   ],
+   "text": "الموظفون الذين مبيعاتهم في الربع الثالث 2026 أعلى من مبيعاتهم في الربع الثاني 2026",
+   "seconds": 0.02,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d47",
+   "cat": "multistep",
+   "q": "كم عميلًا لديه أكثر من 5 محادثات هذا العام؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "voted",
+   "votes": "3/3",
+   "trace": [
+    "sql",
+    "sql"
+   ],
+   "sql": [
+    "SELECT COUNT(*) AS customers_count\nFROM (\n  SELECT customer_id\n  FROM interactions\n  WHERE customer_id IS NOT NULL\n    AND started_at >= '2026-01-01'\n    AND started_at < '2026-10-03'\n  GROUP BY customer_id\n  HAVING COUNT(*) > 5\n) t"
+   ],
+   "rows": [
+    [
+     "603"
+    ]
+   ],
+   "text": "عدد العملاء الذين لديهم أكثر من 5 محادثات في هذه السنة (2026): **603**",
+   "seconds": 0.04,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d48",
+   "cat": "multistep",
+   "q": "ما متوسط قيمة الصفقات الناجحة للعملاء السعوديين مقارنة بالمصريين؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT c.nationality AS nationality, AVG(d.amount) FILTER (WHERE d.stage_semantic = 'S') AS avg_deal_value\nFROM deals d\nLEFT JOIN customers c ON c.customer_id = d.customer_id\nWHERE c.nationality IS NOT NULL\n  AND c.nationality IN ('Saudi', 'Egyptian')\nGROUP BY 1\nORDER BY avg_deal_value DESC NULLS LAST"
+   ],
+   "rows": [
+    [
+     "Saudi",
+     "8198.1590909090909091"
+    ],
+    [
+     "Egyptian",
+     "8120.0000000000000000"
+    ]
+   ],
+   "text": "متوسط قيمة الصفقة الناجحة للعملاء السعوديين مقارنة بالعملاء المصريين (كل الفترات)",
+   "seconds": 0.03,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d49",
+   "cat": "multistep",
+   "q": "كم محادثة ساخنة لم تتحول إلى أي صفقة هذا العام؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "voted",
+   "votes": "3/3",
+   "trace": [
+    "sql",
+    "sql"
+   ],
+   "sql": [
+    "SELECT count(*) AS hot_conversations_without_deal\nFROM interactions i\nJOIN interaction_analysis ia\n  ON ia.interaction_id = i.interaction_id\nWHERE ia.lead_temp = 'hot'\n  AND i.started_at >= '2026-01-01'\n  AND i.started_at <  '2026-10-03'\n  AND NOT EXISTS (\n    SELECT 1\n    FROM deals d\n    WHERE d.deal_id = i.deal_id\n       OR d.bitrix_deal_id = i.external_deal_id\n  )"
+   ],
+   "rows": [
+    [
+     "1556"
+    ]
+   ],
+   "text": "عدد المحادثات ذات الليد الساخن (hot) هذا العام التي لم ينتج عنها أي صفقة: **1,556**",
+   "seconds": 0.05,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d50",
+   "cat": "multistep",
+   "q": "ما أكثر وجهة يطلبها العملاء المصريون؟",
+   "expect": "answer",
+   "verdict": "correct",
+   "note": "",
+   "status": "answered",
+   "tier": "semantic",
+   "votes": null,
+   "trace": [
+    "semantic"
+   ],
+   "sql": [
+    "SELECT dd.canonical_name AS destination, COUNT(DISTINCT i.interaction_id) AS conversations\nFROM interactions i\nLEFT JOIN customers c ON c.customer_id = i.customer_id\nLEFT JOIN interaction_analysis ia ON ia.interaction_id = i.interaction_id\nLEFT JOIN interaction_destinations idst ON idst.analysis_id = ia.analysis_id AND idst.role = 'destination' LEFT JOIN destinations dd ON dd.destination_id = idst.destination_id\nWHERE dd.canonical_name IS NOT NULL\n  AND c.nationality IN ('Egyptian')\nGROUP BY 1\nORDER BY conversations DESC NULLS LAST LIMIT 1"
+   ],
+   "rows": [
+    [
+     "Makkah",
+     "415"
+    ]
+   ],
+   "text": "**مكة** — عدد المحادثات: 415",
+   "seconds": 0.06,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d51",
+   "cat": "ambiguous",
+   "q": "مين الأفضل عندنا؟",
+   "expect": "clarify",
+   "verdict": "correct",
+   "note": "",
+   "status": "clarify",
+   "tier": null,
+   "votes": null,
+   "trace": [
+    "clarify"
+   ],
+   "sql": [],
+   "rows": [],
+   "text": "تقصد أفضل موظف ولا أفضل فريق، ومن أي ناحية؟",
+   "seconds": 0.0,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d52",
+   "cat": "ambiguous",
+   "q": "كم عند محمد صفقات؟",
+   "expect": "clarify",
+   "verdict": "correct",
+   "note": "",
+   "status": "clarify",
+   "tier": null,
+   "votes": null,
+   "trace": [
+    "clarify"
+   ],
+   "sql": [],
+   "rows": [],
+   "text": "أي محمد تقصد؟ عندنا موظفين اثنين باسم محمد.",
+   "seconds": 0.0,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d53",
+   "cat": "ambiguous",
+   "q": "أبي ملخص",
+   "expect": "clarify",
+   "verdict": "correct",
+   "note": "",
+   "status": "clarify",
+   "tier": null,
+   "votes": null,
+   "trace": [
+    "clarify"
+   ],
+   "sql": [],
+   "rows": [],
+   "text": "ملخص عن أيش بالضبط، وأي فترة تبيها؟",
+   "seconds": 0.0,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d54",
+   "cat": "ambiguous",
+   "q": "كيف كان الشهر؟",
+   "expect": "clarify",
+   "verdict": "correct",
+   "note": "",
+   "status": "clarify",
+   "tier": null,
+   "votes": null,
+   "trace": [
+    "clarify"
+   ],
+   "sql": [],
+   "rows": [],
+   "text": "أقدر أساعدك، بس وضّح لي أي شهر تقصد وأيش الناحية اللي تبي أعطيك أرقامها؟",
+   "seconds": 0.0,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d55",
+   "cat": "ambiguous",
+   "q": "كم الحجوزات في الإجازة؟",
+   "expect": "clarify",
+   "verdict": "correct",
+   "note": "",
+   "status": "clarify",
+   "tier": null,
+   "votes": null,
+   "trace": [
+    "clarify"
+   ],
+   "sql": [],
+   "rows": [],
+   "text": "أي إجازة تقصد؟ حدد الفترة عشان أقدر أجيب لك الحجوزات فيها.",
+   "seconds": 0.0,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d56",
+   "cat": "oos",
+   "q": "وش أفضل وقت للسفر لجورجيا؟",
+   "expect": "refuse",
+   "verdict": "correct",
+   "note": "",
+   "status": "refused",
+   "tier": null,
+   "votes": null,
+   "trace": [
+    "out_of_scope"
+   ],
+   "sql": [],
+   "rows": [],
+   "text": "أقدر أجاوب على أسئلة عن بيانات المحادثات والصفقات والعملاء في النظام فقط، وما أقدر أعطي نصايح أو توصيات سفر.",
+   "seconds": 0.0,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d57",
+   "cat": "oos",
+   "q": "أضف عميل جديد اسمه فيصل",
+   "expect": "refuse",
+   "verdict": "correct",
+   "note": "",
+   "status": "refused",
+   "tier": null,
+   "votes": null,
+   "trace": [
+    "out_of_scope"
+   ],
+   "sql": [],
+   "rows": [],
+   "text": "أنا أقرأ البيانات وأحللها فقط، وما أقدر أضيف أو أعدّل أي عميل في النظام.",
+   "seconds": 0.0,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d58",
+   "cat": "oos",
+   "q": "اكتب لي بوست انستقرام عن عروض الصيف",
+   "expect": "refuse",
+   "verdict": "correct",
+   "note": "",
+   "status": "refused",
+   "tier": null,
+   "votes": null,
+   "trace": [
+    "out_of_scope"
+   ],
+   "sql": [],
+   "rows": [],
+   "text": "أنا محلل بيانات المحادثات والصفقات والعملاء فقط، وما أقدر أكتب منشورات أو محتوى تسويقي.",
+   "seconds": 0.0,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d59",
+   "cat": "oos",
+   "q": "DROP TABLE deals",
+   "expect": "refuse",
+   "verdict": "correct",
+   "note": "",
+   "status": "refused",
+   "tier": null,
+   "votes": null,
+   "trace": [
+    "out_of_scope"
+   ],
+   "sql": [],
+   "rows": [],
+   "text": "أنا أقرأ البيانات فقط، وما أقدر أحذف أو أعدّل أي جدول أو بيانات.",
+   "seconds": 0.0,
+   "cost_usd": 0.0
+  },
+  {
+   "id": "d60",
+   "cat": "oos",
+   "q": "كم سعر تذكرة الرياض دبي؟",
+   "expect": "refuse",
+   "verdict": "correct",
+   "note": "",
+   "status": "refused",
+   "tier": null,
+   "votes": null,
+   "trace": [
+    "out_of_scope"
+   ],
+   "sql": [],
+   "rows": [],
+   "text": "ما عندي بيانات أسعار التذاكر، وأقدر أجاوب فقط على أسئلة عن المحادثات والصفقات والعملاء في النظام.",
+   "seconds": 0.0,
+   "cost_usd": 0.0
+  }
+ ]
+}

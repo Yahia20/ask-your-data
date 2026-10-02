@@ -177,10 +177,10 @@ class Model:
         if q.having:
             m = self.metrics[q.having.metric]
             sql += f"\nHAVING {m.sql.replace('{now}', now_sql)} {q.having.op} {q.having.value}"
-        if q.time_grain:
-            sql += "\nORDER BY 1"
-        elif q.top:
+        if q.top:            # "which month had the most": rank the periods instead of listing them
             sql += f"\nORDER BY {mids[0]} {q.top.order.upper()} NULLS LAST LIMIT {q.top.n}"
+        elif q.time_grain:
+            sql += "\nORDER BY 1"
         elif dims:
             sql += f"\nORDER BY {mids[0]} DESC NULLS LAST"
         return Compiled(sql, mids, dims)

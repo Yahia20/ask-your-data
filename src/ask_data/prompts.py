@@ -61,6 +61,7 @@ No period mentioned = null (all time), except snapshot metrics which ignore peri
 Fill only the block for your route; set the others to null.
 - "top" is for "the most / the highest / أكثر / أعلى / أقل / top N" questions: group_by the thing being
   ranked, top.n = how many (1 if they ask for "the" one). "asc" for least/slowest-is-highest-number.
+- "Which month/week/day had the most X" = time_grain with top {{"n": 1}}.
 - "compare_previous" is for "compare X with the month/quarter before" when X is a calendar unit. To compare
   two specific periods that are not consecutive, use route "sql".
 - Filters must use the exact stored values listed in the catalog (e.g. city "Jeddah" for جدة, nationality
