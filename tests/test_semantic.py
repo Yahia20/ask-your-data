@@ -69,3 +69,8 @@ def test_filter_values_are_quoted_safely(model):
     q = SemanticQuery(metrics=["conversations"], filters=[{"dimension": "agent", "values": ["x'); DROP TABLE deals; --"]}])
     [c] = model.compile(q, None, "now()")
     assert "'x''); DROP TABLE deals; --'" in c.sql
+
+
+def test_rows_without_a_group_value_are_left_out(model, warehouse):
+    got = run(model, warehouse, metrics=["conversations"], group_by=["destination"], top={"n": 1})
+    assert got[0][0] is not None

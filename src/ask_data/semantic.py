@@ -130,7 +130,7 @@ class Model:
     def _compile_group(self, eid, time, mids, q, rng, now_sql) -> Compiled:
         ent = self.entities[eid]
         joins = list(ent.required)
-        select, dims = [], []
+        select, dims, group_not_null = [], [], []
 
         def need(js):
             for j in js:
@@ -152,12 +152,15 @@ class Model:
             need(spec.get("joins", []))
             select.append(f"{spec['sql']} AS {d}")
             dims.append(d)
+            # rows with nothing to group by (a chat that named no destination) are left out,
+            # or "(blank)" can come top of a ranking
+            group_not_null.append(f"{spec['sql']} IS NOT NULL")
         for mid in mids:
             m = self.metrics[mid]
             need(m.joins)
             select.append(f"{m.sql.replace('{now}', now_sql)} AS {mid}")
 
-        where = [ent.where] if ent.where else []
+        where = ([ent.where] if ent.where else []) + group_not_null
         for f in q.filters:
             spec = dim(f.dimension)
             where.append(self._filter_sql(f, spec, need))
